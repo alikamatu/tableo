@@ -1,0 +1,14 @@
+{
+  "extends": "../../packages/typescript-config/nestjs.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@tableo/types": ["../../packages/types/src"],
+      "@tableo/utils": ["../../packages/utils/src"]
+    }
+  },
+  "include": ["src/**/*", "prisma/seed/**/*"],
+  "exclude": ["node_modules", "dist", "test"]
+}

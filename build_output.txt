@@ -1,0 +1,410 @@
+
+> tableo@1.0.0 dev
+> turbo run dev
+
+• turbo 2.9.6
+
+   • Packages in scope: @tableo/api, @tableo/eslint-config, @tableo/types, @tableo/typescript-config, @tableo/utils, @tableo/web
+   • Running dev in 6 packages
+   • Remote caching disabled
+
+@tableo/web:dev: cache bypass, force executing 313f91b354b7b136
+@tableo/api:dev: cache bypass, force executing 5c4168adf0e5b383
+@tableo/api:dev: 
+@tableo/api:dev: > @tableo/api@1.0.0 dev
+@tableo/api:dev: > nest start --watch
+@tableo/api:dev: 
+@tableo/web:dev: 
+@tableo/web:dev: > @tableo/web@1.0.0 dev
+@tableo/web:dev: > next dev --port 3000
+@tableo/web:dev: 
+@tableo/api:dev: [2J[3J[H[[90m7:54:52 PM[0m] Starting compilation in watch mode...
+@tableo/api:dev: 
+@tableo/web:dev:  ⨯ Failed to start server
+@tableo/web:dev: Error: listen EADDRINUSE: address already in use :::3000
+@tableo/web:dev:     at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+@tableo/web:dev:     at new Promise (<anonymous>) {
+@tableo/web:dev:   code: 'EADDRINUSE',
+@tableo/web:dev:   errno: -48,
+@tableo/web:dev:   syscall: 'listen',
+@tableo/web:dev:   address: '::',
+@tableo/web:dev:   port: 3000
+@tableo/web:dev: }
+@tableo/web:dev: [?25h
+@tableo/api:dev: [96msrc/common/guards/jwt-auth.guard.ts[0m:[93m13[0m:[93m3[0m - [91merror[0m[90m TS4114: [0mThis member must have an 'override' modifier because it overrides a member in the base class 'IAuthGuard'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m13[0m   canActivate(context: ExecutionContext) {
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m17[0m:[93m25[0m - [91merror[0m[90m TS2694: [0mNamespace '"/Users/osamaalikamatu/Documents/GitHub/tableo/node_modules/.prisma/client/default".Prisma' has no exported member 'AnalyticsSnapshotWhereInput'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m17[0m     const where: Prisma.AnalyticsSnapshotWhereInput = { branchId };
+@tableo/api:dev: [7m  [0m [91m                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m51[0m:[93m41[0m - [91merror[0m[90m TS7006: [0mParameter 'sum' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m51[0m     const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+@tableo/api:dev: [7m  [0m [91m                                        ~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m51[0m:[93m46[0m - [91merror[0m[90m TS7006: [0mParameter 'o' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m51[0m     const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+@tableo/api:dev: [7m  [0m [91m                                             ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m56[0m:[93m21[0m - [91merror[0m[90m TS7006: [0mParameter 'o' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m56[0m     orders.forEach((o) => {
+@tableo/api:dev: [7m  [0m [91m                    ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m63[0m:[93m21[0m - [91merror[0m[90m TS7006: [0mParameter 'o' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m63[0m     orders.forEach((o) => {
+@tableo/api:dev: [7m  [0m [91m                    ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m64[0m:[93m29[0m - [91merror[0m[90m TS7006: [0mParameter 'item' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m64[0m       o.orderItems.forEach((item) => {
+@tableo/api:dev: [7m  [0m [91m                            ~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m90[0m:[93m21[0m - [91merror[0m[90m TS7006: [0mParameter 'o' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m90[0m     orders.forEach((o) => {
+@tableo/api:dev: [7m  [0m [91m                    ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m127[0m:[93m41[0m - [91merror[0m[90m TS7006: [0mParameter 'sum' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m127[0m     const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+@tableo/api:dev: [7m   [0m [91m                                        ~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m127[0m:[93m46[0m - [91merror[0m[90m TS7006: [0mParameter 'o' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m127[0m     const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+@tableo/api:dev: [7m   [0m [91m                                             ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m131[0m:[93m21[0m - [91merror[0m[90m TS7006: [0mParameter 'o' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m131[0m     orders.forEach((o) => {
+@tableo/api:dev: [7m   [0m [91m                    ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m137[0m:[93m21[0m - [91merror[0m[90m TS7006: [0mParameter 'o' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m137[0m     orders.forEach((o) => {
+@tableo/api:dev: [7m   [0m [91m                    ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m138[0m:[93m29[0m - [91merror[0m[90m TS7006: [0mParameter 'item' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m138[0m       o.orderItems.forEach((item) => {
+@tableo/api:dev: [7m   [0m [91m                            ~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m163[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'Decimal' does not exist on type 'typeof Prisma'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m163[0m         totalRevenue: new Prisma.Decimal(totalRevenue),
+@tableo/api:dev: [7m   [0m [91m                                 ~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m164[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'Decimal' does not exist on type 'typeof Prisma'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m164[0m         avgOrderValue: new Prisma.Decimal(avgOrderValue),
+@tableo/api:dev: [7m   [0m [91m                                  ~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m170[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'Decimal' does not exist on type 'typeof Prisma'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m170[0m         totalRevenue: new Prisma.Decimal(totalRevenue),
+@tableo/api:dev: [7m   [0m [91m                                 ~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m171[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'Decimal' does not exist on type 'typeof Prisma'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m171[0m         avgOrderValue: new Prisma.Decimal(avgOrderValue),
+@tableo/api:dev: [7m   [0m [91m                                  ~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/analytics/analytics.service.ts[0m:[93m195[0m:[93m21[0m - [91merror[0m[90m TS7006: [0mParameter 'b' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m195[0m       branches.map((b) => this.generateDailySnapshot(b.id, yesterday)),
+@tableo/api:dev: [7m   [0m [91m                    ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/auth/auth.module.ts[0m:[93m16[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '(config: ConfigService) => { secret: string | undefined; signOptions: { expiresIn: string; }; }' is not assignable to type '(...args: any[]) => JwtModuleOptions | Promise<JwtModuleOptions>'.
+@tableo/api:dev:   Type '{ secret: string | undefined; signOptions: { expiresIn: string; }; }' is not assignable to type 'JwtModuleOptions | Promise<JwtModuleOptions>'.
+@tableo/api:dev:     Type '{ secret: string | undefined; signOptions: { expiresIn: string; }; }' is not assignable to type 'JwtModuleOptions' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+@tableo/api:dev:       Types of property 'secret' are incompatible.
+@tableo/api:dev:         Type 'string | undefined' is not assignable to type 'string | Buffer<ArrayBufferLike>'.
+@tableo/api:dev:           Type 'undefined' is not assignable to type 'string | Buffer<ArrayBufferLike>'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m16[0m       useFactory: (config: ConfigService) => ({
+@tableo/api:dev: [7m  [0m [91m      ~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev:   [96m../../node_modules/@nestjs/jwt/dist/interfaces/jwt-module-options.interface.d.ts[0m:[93m25[0m:[93m5[0m
+@tableo/api:dev:     [7m25[0m     useFactory?: (...args: any[]) => Promise<JwtModuleOptions> | JwtModuleOptions;
+@tableo/api:dev:     [7m  [0m [96m    ~~~~~~~~~~[0m
+@tableo/api:dev:     The expected type comes from property 'useFactory' which is declared here on type 'JwtModuleAsyncOptions'
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/auth/auth.service.ts[0m:[93m7[0m:[93m44[0m - [91merror[0m[90m TS6059: [0mFile '/Users/osamaalikamatu/Documents/GitHub/tableo/packages/types/src/index.ts' is not under 'rootDir' '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src'. 'rootDir' is expected to contain all source files.
+@tableo/api:dev:   The file is in the program because:
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/auth/auth.service.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/common/decorators/current-user.decorator.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/auth/auth.controller.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/auth/strategies/jwt.strategy.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/restaurants/restaurants.controller.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/common/guards/branch-access.guard.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/branches/branches.controller.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/menu/menu.service.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/orders/dto/create-order.dto.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/orders/dto/update-order-status.dto.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/orders/dto/update-payment.dto.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/orders/dto/query-orders.dto.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/staff/dto/invite-staff.dto.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/staff/dto/update-staff.dto.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/staff/staff.controller.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/subscriptions/dto/init-subscription.dto.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/subscriptions/subscriptions.controller.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/common/decorators/roles.decorator.ts'
+@tableo/api:dev:     Imported via '@tableo/types' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/common/guards/plan.guard.ts'
+@tableo/api:dev: 
+@tableo/api:dev: [7m7[0m import type { JwtPayload, JwtTokens } from '@tableo/types';
+@tableo/api:dev: [7m [0m [91m                                           ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev:   [96msrc/common/decorators/current-user.decorator.ts[0m:[93m2[0m:[93m33[0m
+@tableo/api:dev:     [7m2[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/auth/auth.controller.ts[0m:[93m9[0m:[93m33[0m
+@tableo/api:dev:     [7m9[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/auth/strategies/jwt.strategy.ts[0m:[93m5[0m:[93m33[0m
+@tableo/api:dev:     [7m5[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/restaurants/restaurants.controller.ts[0m:[93m7[0m:[93m33[0m
+@tableo/api:dev:     [7m7[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/common/guards/branch-access.guard.ts[0m:[93m3[0m:[93m33[0m
+@tableo/api:dev:     [7m3[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/branches/branches.controller.ts[0m:[93m8[0m:[93m33[0m
+@tableo/api:dev:     [7m8[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/menu/menu.service.ts[0m:[93m7[0m:[93m35[0m
+@tableo/api:dev:     [7m7[0m import type { ResolvedMenu } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                  ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/orders/dto/create-order.dto.ts[0m:[93m14[0m:[93m31[0m
+@tableo/api:dev:     [7m14[0m import { PaymentMethod } from '@tableo/types';
+@tableo/api:dev:     [7m  [0m [96m                              ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/orders/dto/update-order-status.dto.ts[0m:[93m3[0m:[93m29[0m
+@tableo/api:dev:     [7m3[0m import { OrderStatus } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                            ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/orders/dto/update-payment.dto.ts[0m:[93m3[0m:[93m31[0m
+@tableo/api:dev:     [7m3[0m import { PaymentStatus } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                              ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/orders/dto/query-orders.dto.ts[0m:[93m3[0m:[93m29[0m
+@tableo/api:dev:     [7m3[0m import { OrderStatus } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                            ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/staff/dto/invite-staff.dto.ts[0m:[93m3[0m:[93m27[0m
+@tableo/api:dev:     [7m3[0m import { StaffRole } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                          ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/staff/dto/update-staff.dto.ts[0m:[93m3[0m:[93m27[0m
+@tableo/api:dev:     [7m3[0m import { StaffRole } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                          ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/staff/staff.controller.ts[0m:[93m7[0m:[93m33[0m
+@tableo/api:dev:     [7m7[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/subscriptions/dto/init-subscription.dto.ts[0m:[93m3[0m:[93m22[0m
+@tableo/api:dev:     [7m3[0m import { Plan } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                     ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/subscriptions/subscriptions.controller.ts[0m:[93m18[0m:[93m33[0m
+@tableo/api:dev:     [7m18[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m  [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/common/decorators/roles.decorator.ts[0m:[93m2[0m:[93m32[0m
+@tableo/api:dev:     [7m2[0m import type { StaffRole } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                               ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/common/guards/plan.guard.ts[0m:[93m6[0m:[93m33[0m
+@tableo/api:dev:     [7m6[0m import type { JwtPayload } from '@tableo/types';
+@tableo/api:dev:     [7m [0m [96m                                ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/auth/auth.service.ts[0m:[93m62[0m:[93m16[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+@tableo/api:dev:   Overload 1 of 2, '(payload: string, options?: Omit<JwtSignOptions, keyof SignOptions> | undefined): Promise<string>', gave the following error.
+@tableo/api:dev:     Argument of type 'JwtPayload' is not assignable to parameter of type 'string'.
+@tableo/api:dev:   Overload 2 of 2, '(payload: object | Buffer<ArrayBufferLike>, options?: JwtSignOptions | undefined): Promise<string>', gave the following error.
+@tableo/api:dev:     Argument of type '{ secret: string | undefined; expiresIn: string; }' is not assignable to parameter of type 'JwtSignOptions' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+@tableo/api:dev:       Types of property 'secret' are incompatible.
+@tableo/api:dev:         Type 'string | undefined' is not assignable to type 'string | Buffer<ArrayBufferLike>'.
+@tableo/api:dev:           Type 'undefined' is not assignable to type 'string | Buffer<ArrayBufferLike>'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m62[0m       this.jwt.signAsync(payload, {
+@tableo/api:dev: [7m  [0m [91m               ~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/auth/dto/login.dto.ts[0m:[93m7[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'email' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m7[0m   email: string;
+@tableo/api:dev: [7m [0m [91m  ~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/auth/dto/login.dto.ts[0m:[93m11[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'password' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m11[0m   password: string;
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/auth/dto/register.dto.ts[0m:[93m7[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'email' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m7[0m   email: string;
+@tableo/api:dev: [7m [0m [91m  ~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/auth/dto/register.dto.ts[0m:[93m12[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'password' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m12[0m   password: string;
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/auth/dto/register.dto.ts[0m:[93m16[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'fullName' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m16[0m   fullName: string;
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/branches/branches.service.ts[0m:[93m9[0m:[93m45[0m - [91merror[0m[90m TS6059: [0mFile '/Users/osamaalikamatu/Documents/GitHub/tableo/packages/utils/src/index.ts' is not under 'rootDir' '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src'. 'rootDir' is expected to contain all source files.
+@tableo/api:dev:   The file is in the program because:
+@tableo/api:dev:     Imported via '@tableo/utils' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/branches/branches.service.ts'
+@tableo/api:dev:     Imported via '@tableo/utils' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/orders/orders.service.ts'
+@tableo/api:dev:     Imported via '@tableo/utils' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/modules/analytics/analytics.service.ts'
+@tableo/api:dev:     Imported via '@tableo/utils' from file '/Users/osamaalikamatu/Documents/GitHub/tableo/apps/api/src/common/guards/plan.guard.ts'
+@tableo/api:dev: 
+@tableo/api:dev: [7m9[0m import { generateSlug, BRANCH_LIMITS } from '@tableo/utils';
+@tableo/api:dev: [7m [0m [91m                                            ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev:   [96msrc/modules/orders/orders.service.ts[0m:[93m8[0m:[93m47[0m
+@tableo/api:dev:     [7m8[0m import { paginate, buildPaginationMeta } from '@tableo/utils';
+@tableo/api:dev:     [7m [0m [96m                                              ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/modules/analytics/analytics.service.ts[0m:[93m4[0m:[93m47[0m
+@tableo/api:dev:     [7m4[0m import { yesterdayString, toDateString } from '@tableo/utils';
+@tableo/api:dev:     [7m [0m [96m                                              ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev:   [96msrc/common/guards/plan.guard.ts[0m:[93m5[0m:[93m31[0m
+@tableo/api:dev:     [7m5[0m import { planSatisfies } from '@tableo/utils';
+@tableo/api:dev:     [7m [0m [96m                              ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev:     File is included via import here.
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/branches/dto/create-branch.dto.ts[0m:[93m8[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'name' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m8[0m   name: string;
+@tableo/api:dev: [7m [0m [91m  ~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/menu/dto/create-category.dto.ts[0m:[93m8[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'name' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m8[0m   name: string;
+@tableo/api:dev: [7m [0m [91m  ~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/menu/dto/create-menu-item.dto.ts[0m:[93m7[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'categoryId' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m7[0m   categoryId: string;
+@tableo/api:dev: [7m [0m [91m  ~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/menu/dto/create-menu-item.dto.ts[0m:[93m12[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'name' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m12[0m   name: string;
+@tableo/api:dev: [7m  [0m [91m  ~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/menu/dto/create-menu-item.dto.ts[0m:[93m23[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'basePrice' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m23[0m   basePrice: number;
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/menu/menu.service.ts[0m:[93m101[0m:[93m35[0m - [91merror[0m[90m TS7006: [0mParameter 'cat' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m101[0m       categories: categories.map((cat) => ({
+@tableo/api:dev: [7m   [0m [91m                                  ~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/menu/menu.service.ts[0m:[93m106[0m:[93m17[0m - [91merror[0m[90m TS7006: [0mParameter 'item' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m106[0m           .map((item) => {
+@tableo/api:dev: [7m   [0m [91m                ~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/menu/menu.service.ts[0m:[93m120[0m:[93m20[0m - [91merror[0m[90m TS7006: [0mParameter 'i' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m120[0m           .filter((i): i is NonNullable<typeof i> => i !== null),
+@tableo/api:dev: [7m   [0m [91m                   ~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/dto/create-order.dto.ts[0m:[93m19[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'menuItemId' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m19[0m   menuItemId: string;
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/dto/create-order.dto.ts[0m:[93m24[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'quantity' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m24[0m   quantity: number;
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/dto/create-order.dto.ts[0m:[93m36[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'branchId' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m36[0m   branchId: string;
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/dto/create-order.dto.ts[0m:[93m52[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'paymentMethod' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m52[0m   paymentMethod: PaymentMethod;
+@tableo/api:dev: [7m  [0m [91m  ~~~~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/dto/create-order.dto.ts[0m:[93m58[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'items' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m58[0m   items: CreateOrderItemDto[];
+@tableo/api:dev: [7m  [0m [91m  ~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/dto/update-order-status.dto.ts[0m:[93m8[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'status' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m8[0m   status: OrderStatus;
+@tableo/api:dev: [7m [0m [91m  ~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/dto/update-payment.dto.ts[0m:[93m8[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'paymentStatus' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m8[0m   paymentStatus: PaymentStatus;
+@tableo/api:dev: [7m [0m [91m  ~~~~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/orders.service.ts[0m:[93m28[0m:[93m44[0m - [91merror[0m[90m TS7006: [0mParameter 'tx' implicitly has an 'any' type.
+@tableo/api:dev: 
+@tableo/api:dev: [7m28[0m     return this.prisma.$transaction(async (tx) => {
+@tableo/api:dev: [7m  [0m [91m                                           ~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/orders.service.ts[0m:[93m58[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'Decimal' does not exist on type 'typeof Prisma'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m58[0m             unitPrice: new Prisma.Decimal(unitPrice),
+@tableo/api:dev: [7m  [0m [91m                                  ~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/orders.service.ts[0m:[93m78[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'Decimal' does not exist on type 'typeof Prisma'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m78[0m           total: new Prisma.Decimal(total),
+@tableo/api:dev: [7m  [0m [91m                            ~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/orders/orders.service.ts[0m:[93m94[0m:[93m25[0m - [91merror[0m[90m TS2694: [0mNamespace '"/Users/osamaalikamatu/Documents/GitHub/tableo/node_modules/.prisma/client/default".Prisma' has no exported member 'OrderWhereInput'.
+@tableo/api:dev: 
+@tableo/api:dev: [7m94[0m     const where: Prisma.OrderWhereInput = { branchId };
+@tableo/api:dev: [7m  [0m [91m                        ~~~~~~~~~~~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/restaurants/dto/create-restaurant.dto.ts[0m:[93m8[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'name' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m8[0m   name: string;
+@tableo/api:dev: [7m [0m [91m  ~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/staff/dto/invite-staff.dto.ts[0m:[93m8[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'email' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m8[0m   email: string;
+@tableo/api:dev: [7m [0m [91m  ~~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [96msrc/modules/staff/dto/invite-staff.dto.ts[0m:[93m12[0m:[93m3[0m - [91merror[0m[90m TS2564: [0mProperty 'role' has no initializer and is not definitely assigned in the constructor.
+@tableo/api:dev: 
+@tableo/api:dev: [7m12[0m   role: StaffRole;
+@tableo/api:dev: [7m  [0m [91m  ~~~~[0m
+@tableo/api:dev: 
+@tableo/api:dev: [[90m7:54:53 PM[0m] Found 49 errors. Watching for file changes.
+@tableo/api:dev: 
+ ERROR  run failed: command  exited (1)

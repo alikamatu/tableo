@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design tokens ──────────────────────────────────────────────────────────
+   Light:  white background, black text, red-600 brand
+   Dark:   black background, white text, red-600 brand
+   Brand (red-600) is identical in both modes — never changes.
+────────────────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    /* Surfaces */
+    --bg:          0 0% 100%;        /* pure white */
+    --surface:     0 0% 97%;         /* slightly off-white card */
+    --subtle:      0 0% 94%;         /* hover / pill bg */
+
+    /* Text */
+    --fg:          0 0% 7%;          /* near-black */
+    --fg-muted:    0 0% 44%;         /* secondary text */
+
+    /* Brand — red-600, identical in both modes */
+    --brand:       0 72% 51%;        /* #dc2626  */
+    --brand-fg:    0 0% 100%;        /* white on brand */
+
+    /* Semantic */
+    --success:     142 71% 45%;
+    --warning:     38  92% 50%;
+    --danger:      0   72% 51%;      /* same as brand */
+
+    /* Chrome */
+    --border:      0 0% 90%;
+    --ring:        0 72% 51%;        /* focus ring = brand */
+    --radius:      0.625rem;
+  }
+
+  .dark {
+    --bg:          0 0% 0%;          /* pure black */
+    --surface:     0 0% 6%;          /* dark card */
+    --subtle:      0 0% 10%;         /* dark hover */
+
+    --fg:          0 0% 95%;
+    --fg-muted:    0 0% 46%;
+
+    --brand:       0 72% 51%;        /* unchanged */
+    --brand-fg:    0 0% 100%;
+
+    --success:     142 71% 45%;
+    --warning:     38  92% 50%;
+    --danger:      0   72% 51%;
+
+    --border:      0 0% 14%;
+    --ring:        0 72% 51%;
+  }
+}
+
+/* ─── Base styles ─────────────────────────────────────────────────────────── */
+
+@layer base {
+  *, *::before, *::after {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: hsl(var(--bg));
+    color: hsl(var(--fg));
+    font-family: var(--font-inter), system-ui, sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  ::selection {
+    background-color: hsl(var(--brand) / 0.15);
+    color: hsl(var(--fg));
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar        { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  {
+    background: hsl(var(--border));
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--fg-muted) / 0.4);
+  }
+}
