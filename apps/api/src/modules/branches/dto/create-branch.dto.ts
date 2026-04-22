@@ -21,4 +21,14 @@ export class CreateBranchDto {
   @IsOptional()
   @IsObject()
   openingHours?: Record<string, string>;
+
+  @ApiProperty({ example: 'John Manager' })
+  @IsString()
+  @MaxLength(120)
+  managerName!: string;
+
+  @ApiProperty({ example: 'manager@example.com' })
+  @IsString()
+  @MaxLength(120)
+  managerEmail!: string;
 }

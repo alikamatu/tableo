@@ -45,7 +45,24 @@ const config: Config = {
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '1rem' }],
       },
+
+      keyframes: {
+        loading: {
+          '0%': { width: '0%', transform: 'translateX(0)' },
+          '50%': { width: '70%', transform: 'translateX(10%)' },
+          '100%': { width: '100%', transform: 'translateX(0)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+      },
+      animation: {
+        loading: 'loading 2s ease-in-out forwards',
+        float: 'float 3s ease-in-out infinite',
+      },
     },
+
   },
   plugins: [],
 };

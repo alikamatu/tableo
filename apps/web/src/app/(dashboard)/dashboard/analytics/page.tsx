@@ -6,7 +6,8 @@ import {
   DollarSign, 
   TrendingUp, 
   Clock, 
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Loader2
 } from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import api from '@/lib/api';
@@ -51,7 +52,8 @@ interface Snapshot {
 }
 
 export default function AnalyticsPage() {
-  const { current: branch } = useAppSelector((s) => s.branch);
+  const { current: branch, loading: branchLoading } = useAppSelector((s) => s.branch);
+  const { loading: restLoading } = useAppSelector((s) => s.restaurant);
   const [live, setLive] = useState<LiveSummary | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +94,14 @@ export default function AnalyticsPage() {
       });
     }
   }, [loading]);
+
+  if ((restLoading || branchLoading) && !branch) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   if (!branch) return <div className="text-center py-20 text-muted-foreground font-medium">Select a branch to view statistics.</div>;
 

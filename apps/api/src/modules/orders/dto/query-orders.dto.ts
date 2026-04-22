@@ -1,6 +1,6 @@
 import { IsOptional, IsEnum, IsDateString, IsNumber, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { OrderStatus } from '@tableo/types';
+import { OrderStatus, type OrderStatusType } from '@tableo/types';
 
 export class QueryOrdersDto {
   @ApiProperty({ required: false, default: 1 })
@@ -18,7 +18,7 @@ export class QueryOrdersDto {
   @ApiProperty({ enum: OrderStatus, required: false })
   @IsOptional()
   @IsEnum(OrderStatus)
-  status?: OrderStatus;
+  status?: OrderStatusType;
 
   @ApiProperty({ required: false, example: '2025-01-01' })
   @IsOptional()

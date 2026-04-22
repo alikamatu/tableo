@@ -12,6 +12,7 @@ import { useAlert } from '@/components/ui/Alert';
 import { useAuth } from '@/hooks/use-auth';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
 
 function LoginForm() {
   const { login, loading } = useAuth();
@@ -87,6 +88,17 @@ function LoginForm() {
           Sign in
         </Button>
       </form>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-border"></div>
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-surface px-2 text-muted font-medium">Or continue with</span>
+        </div>
+      </div>
+
+      <GoogleLoginButton label="Sign in with Google" />
 
       <p className="text-center text-sm text-muted mt-6">
         No account?{' '}

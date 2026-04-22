@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { PaymentMethod } from '@tableo/types';
+import { PaymentMethod, type PaymentMethodType } from '@tableo/types';
 
 export class CreateOrderItemDto {
   @ApiProperty({ example: 'uuid-of-menu-item' })
@@ -49,7 +49,7 @@ export class CreateOrderDto {
 
   @ApiProperty({ enum: PaymentMethod, default: PaymentMethod.COUNTER })
   @IsEnum(PaymentMethod)
-  paymentMethod!: PaymentMethod;
+  paymentMethod!: PaymentMethodType;
 
   @ApiProperty({ type: [CreateOrderItemDto] })
   @IsArray()

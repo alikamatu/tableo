@@ -1,27 +1,73 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import api from '@/lib/api';
+import { normalizeError, type NormalizedError } from '@/lib/api-error';
 
-interface Restaurant {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface Restaurant {
   id: string;
+  ownerId: string;
+  // Identity
   name: string;
+  slug: string;
+  description: string | null;
+  tagline: string | null;
   logoUrl: string | null;
+  coverUrl: string | null;
+  cuisine: string[];
+  // Contact
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  // Social
+  instagramHandle: string | null;
+  twitterHandle: string | null;
+  facebookHandle: string | null;
+  tiktokHandle: string | null;
+  // Location
+  address: string | null;
+  city: string | null;
+  country: string;
+  currency: string;
+  openingHours: Record<string, { open: string; close: string; closed: boolean }> | null;
+  // Paystack
+  paystackPublicKey: string | null;
+  // Settlement
+  settlementType: string | null;
+  settlementBank: string | null;
+  settlementAccountNumber: string | null;
+  paystackSubaccountCode: string | null;
+  // Subscription
   plan: string;
   subStatus: string;
+  subExpiresAt: string | null;
+  // Onboarding
+  onboardComplete: boolean;
+  // Timestamps
   createdAt: string;
-  _count?: { branches: number };
+  updatedAt: string;
+  // Relations
+  branches?: { id: string; name: string; slug: string; isActive: boolean }[];
+  _count?: { branches: number; menuItems: number };
 }
+
+export type RestaurantUpdatePayload = Partial<Omit<Restaurant, 'id' | 'ownerId' | 'createdAt' | 'updatedAt' | 'plan' | 'subStatus' | 'subExpiresAt' | 'onboardComplete' | '_count' | 'branches'>> & {
+  paystackSecretKey?: string;
+};
 
 interface RestaurantState {
   restaurants: Restaurant[];
   current: Restaurant | null;
   loading: boolean;
-  error: string | null;
+  saving: boolean;
+  error: NormalizedError | null;
 }
 
 const initialState: RestaurantState = {
   restaurants: [],
   current: null,
   loading: false,
+  saving: false,
   error: null,
 };
 
@@ -33,8 +79,8 @@ export const fetchRestaurants = createAsyncThunk(
     try {
       const { data } = await api.get('/restaurants');
       return data.data as Restaurant[];
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message ?? 'Failed to load restaurants');
+    } catch (err) {
+      return rejectWithValue(normalizeError(err));
     }
   },
 );
@@ -45,44 +91,23 @@ export const fetchRestaurant = createAsyncThunk(
     try {
       const { data } = await api.get(`/restaurants/${id}`);
       return data.data as Restaurant;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message ?? 'Failed to load restaurant');
-    }
-  },
-);
-
-export const createRestaurant = createAsyncThunk(
-  'restaurant/create',
-  async (payload: { name: string; logoUrl?: string }, { rejectWithValue }) => {
-    try {
-      const { data } = await api.post('/restaurants', payload);
-      return data.data as Restaurant;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message ?? 'Failed to create restaurant');
+    } catch (err) {
+      return rejectWithValue(normalizeError(err));
     }
   },
 );
 
 export const updateRestaurant = createAsyncThunk(
   'restaurant/update',
-  async ({ id, ...payload }: { id: string; name?: string; logoUrl?: string }, { rejectWithValue }) => {
+  async (
+    { id, ...payload }: RestaurantUpdatePayload & { id: string },
+    { rejectWithValue },
+  ) => {
     try {
       const { data } = await api.patch(`/restaurants/${id}`, payload);
       return data.data as Restaurant;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message ?? 'Failed to update restaurant');
-    }
-  },
-);
-
-export const deleteRestaurant = createAsyncThunk(
-  'restaurant/delete',
-  async (id: string, { rejectWithValue }) => {
-    try {
-      await api.delete(`/restaurants/${id}`);
-      return id;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message ?? 'Failed to delete restaurant');
+    } catch (err) {
+      return rejectWithValue(normalizeError(err));
     }
   },
 );
@@ -101,53 +126,40 @@ const restaurantSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch all
     builder
-      .addCase(fetchRestaurants.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      .addCase(fetchRestaurants.pending,   (s) => { s.loading = true; s.error = null; })
+      .addCase(fetchRestaurants.fulfilled, (s, a: PayloadAction<Restaurant[]>) => {
+        s.loading = false;
+        s.restaurants = a.payload;
+        if (!s.current && a.payload.length > 0) s.current = a.payload[0]!;
       })
-      .addCase(fetchRestaurants.fulfilled, (state, action) => {
-        state.loading = false;
-        state.restaurants = action.payload;
-        // Auto-select first if no current
-        if (!state.current && action.payload.length > 0) {
-          state.current = action.payload[0]!;
-        }
+      .addCase(fetchRestaurants.rejected,  (s, a) => {
+        s.loading = false;
+        s.error = a.payload as NormalizedError;
+      });
+
+    builder
+      .addCase(fetchRestaurant.pending,   (s) => { s.loading = true; })
+      .addCase(fetchRestaurant.fulfilled, (s, a: PayloadAction<Restaurant>) => {
+        s.loading = false;
+        s.current = a.payload;
+        const idx = s.restaurants.findIndex((r) => r.id === a.payload.id);
+        if (idx >= 0) s.restaurants[idx] = a.payload;
+        else s.restaurants.unshift(a.payload);
       })
-      .addCase(fetchRestaurants.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      });
+      .addCase(fetchRestaurant.rejected,  (s) => { s.loading = false; });
 
-    // Fetch one
     builder
-      .addCase(fetchRestaurant.fulfilled, (state, action) => {
-        state.current = action.payload;
-      });
-
-    // Create
-    builder
-      .addCase(createRestaurant.fulfilled, (state, action) => {
-        state.restaurants.unshift(action.payload);
-        state.current = action.payload;
-      });
-
-    // Update
-    builder
-      .addCase(updateRestaurant.fulfilled, (state, action) => {
-        const idx = state.restaurants.findIndex((r) => r.id === action.payload.id);
-        if (idx >= 0) state.restaurants[idx] = action.payload;
-        if (state.current?.id === action.payload.id) state.current = action.payload;
-      });
-
-    // Delete
-    builder
-      .addCase(deleteRestaurant.fulfilled, (state, action) => {
-        state.restaurants = state.restaurants.filter((r) => r.id !== action.payload);
-        if (state.current?.id === action.payload) {
-          state.current = state.restaurants[0] ?? null;
-        }
+      .addCase(updateRestaurant.pending,   (s) => { s.saving = true; s.error = null; })
+      .addCase(updateRestaurant.fulfilled, (s, a: PayloadAction<Restaurant>) => {
+        s.saving = false;
+        const idx = s.restaurants.findIndex((r) => r.id === a.payload.id);
+        if (idx >= 0) s.restaurants[idx] = a.payload;
+        if (s.current?.id === a.payload.id) s.current = a.payload;
+      })
+      .addCase(updateRestaurant.rejected,  (s, a) => {
+        s.saving = false;
+        s.error = a.payload as NormalizedError;
       });
   },
 });

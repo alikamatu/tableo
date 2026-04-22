@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { registerSchema, type RegisterFormData } from '@/lib/validations';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { PasswordStrength } from '@/components/auth/PasswordStrength';
+import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
 
 function RegisterForm() {
   const { register: registerUser, loading } = useAuth();
@@ -30,7 +31,7 @@ function RegisterForm() {
 
   const onSubmit = async (data: RegisterFormData, event?: React.BaseSyntheticEvent) => {
     event?.preventDefault();
-    const err = await registerUser(data, null);
+    const err = await registerUser(data);
     if (!err) {
       show('success', 'Account created! Please check your email to verify your account.');
       return;
@@ -110,6 +111,17 @@ function RegisterForm() {
           Create account
         </Button>
       </form>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-border"></div>
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-surface px-2 text-muted font-medium">Or continue with</span>
+        </div>
+      </div>
+
+      <GoogleLoginButton label="Sign up with Google" />
 
       <p className="text-xs text-center text-muted mt-4 leading-relaxed">
         By creating an account you agree to our{' '}

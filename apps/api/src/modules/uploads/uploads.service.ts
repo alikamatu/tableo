@@ -24,14 +24,26 @@ export class UploadsService {
   ): Promise<{ url: string; publicId: string }> {
     if (!file) throw new BadRequestException('No file provided');
 
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Only JPEG, PNG, WebP, and GIF images are allowed');
+    // Accept all common image formats — including HEIC/HEIF from iPhones
+    const allowedMimeTypes = [
+      'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+      'image/heic', 'image/heif', 'image/tiff', 'image/svg+xml',
+      'image/bmp', 'image/avif',
+    ];
+
+    // Also accept by extension for HEIC files that may report as application/octet-stream
+    const ext = file.originalname?.toLowerCase().split('.').pop() ?? '';
+    const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'tiff', 'tif', 'svg', 'bmp', 'avif'];
+
+    if (!allowedMimeTypes.includes(file.mimetype) && !allowedExts.includes(ext)) {
+      throw new BadRequestException(
+        'Unsupported image format. Accepted: JPEG, PNG, WebP, GIF, HEIC, HEIF, TIFF, SVG, BMP, AVIF',
+      );
     }
 
-    // Max 5 MB
-    if (file.size > 5 * 1024 * 1024) {
-      throw new BadRequestException('Image must be smaller than 5 MB');
+    // Max 10 MB (HEIC files are larger)
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('Image must be smaller than 10 MB');
     }
 
     return new Promise((resolve, reject) => {
@@ -40,9 +52,10 @@ export class UploadsService {
           {
             folder,
             resource_type: 'image',
+            format: 'webp',   // Auto-convert all uploads to WebP for fast loading
             transformation: [
               { width: 1200, crop: 'limit' },
-              { quality: 'auto', fetch_format: 'auto' },
+              { quality: 'auto' },
             ],
           },
           (error, result?: UploadApiResponse) => {

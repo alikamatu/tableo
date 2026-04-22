@@ -73,7 +73,17 @@ export class MenuService {
   async resolveMenuForSlug(slug: string): Promise<ResolvedMenu> {
     const branch = await this.prisma.branch.findUnique({
       where: { slug },
-      include: { restaurant: { select: { id: true, name: true, logoUrl: true } } },
+      include: { 
+        restaurant: { 
+          select: { 
+            id: true, 
+            name: true, 
+            logoUrl: true,
+            paystackPublicKey: true,
+            paystackSubaccountCode: true,
+          } 
+        } 
+      },
     });
     if (!branch || !branch.isActive) throw new NotFoundException('Menu not found');
 
@@ -97,6 +107,8 @@ export class MenuService {
         id: branch.id,
         name: branch.name,
         logoUrl: branch.restaurant.logoUrl,
+        paystackPublicKey: branch.restaurant.paystackPublicKey,
+        paystackSubaccountCode: branch.restaurant.paystackSubaccountCode,
       },
       categories: categories.map((cat: any) => ({
         id: cat.id,

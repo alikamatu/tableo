@@ -3,8 +3,10 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import * as QRCode from 'qrcode';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../config/prisma.service';
 import { generateSlug, BRANCH_LIMITS } from '@tableo/utils';
 import type { CreateBranchDto } from './dto/create-branch.dto';
@@ -12,9 +14,12 @@ import type { UpdateBranchDto } from './dto/update-branch.dto';
 
 @Injectable()
 export class BranchesService {
+  private readonly logger = new Logger(BranchesService.name);
   constructor(private prisma: PrismaService) {}
 
   async create(restaurantId: string, ownerId: string, dto: CreateBranchDto) {
+    const { managerEmail, managerName, ...branchData } = dto;
+
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
       include: { _count: { select: { branches: true } } },
@@ -30,8 +35,47 @@ export class BranchesService {
     }
 
     const slug = generateSlug(dto.name);
-    return this.prisma.branch.create({
-      data: { restaurantId, slug, ...dto },
+    const tempPassword = `Tableo${Math.floor(1000 + Math.random() * 9000)}!`;
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Ensure manager user exists
+      let user = await tx.user.findUnique({ where: { email: managerEmail.toLowerCase() } });
+      const isNewUser = !user;
+
+      if (!user) {
+        user = await tx.user.create({
+          data: {
+            email: managerEmail.toLowerCase(),
+            fullName: managerName,
+            passwordHash,
+            onboardComplete: true, // Managers don't need onboarding flow
+          },
+        });
+      }
+
+      // 2. Create the branch
+      const branch = await tx.branch.create({
+        data: {
+          slug,
+          ...branchData,
+          restaurantId,
+        },
+      });
+
+      // 3. Link as manager
+      await tx.staffMember.create({
+        data: {
+          branchId: branch.id,
+          userId: user.id,
+          role: 'manager',
+        },
+      });
+
+      return {
+        ...branch,
+        managerPassword: isNewUser ? tempPassword : null, 
+      };
     });
   }
 

@@ -56,6 +56,16 @@ export class SubscriptionsController {
   }
 
   @ApiBearerAuth()
+  @Post('restaurants/:restaurantId/subscription/trial')
+  startTrial(
+    @CurrentUser() user: JwtPayload,
+    @Param('restaurantId') restaurantId: string,
+    @Body('plan') plan: 'pro' | 'business',
+  ) {
+    return this.svc.startTrial(user.sub, restaurantId, plan);
+  }
+
+  @ApiBearerAuth()
   @Post('restaurants/:restaurantId/subscription/cancel')
   cancel(
     @CurrentUser() user: JwtPayload,

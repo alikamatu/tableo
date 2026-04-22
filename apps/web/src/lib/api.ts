@@ -1,94 +1,86 @@
-import axios from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { tokenStore, clearSession } from './tokens';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:1000/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
+  withCredentials: true,  // send httpOnly refresh_token cookie on every request
+  timeout: 15_000,
 });
 
-/**
- * Clean axios instance for initialization to avoid circular interceptor dependencies.
- */
-export const apiNoIntercept = axios.create({
-  baseURL: API_URL,
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
-});
+// ─── Request: attach in-memory access token ───────────────────────────────────
 
-// ─── Request interceptor: attach access token ─────────────────────────────────
-
-api.interceptors.request.use((config) => {
-  const url = config.url || '';
-  const isRefresh = url.includes('/auth/refresh');
-
-  const accessToken = tokenStore.getAccess();
-  if (accessToken && !isRefresh) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = tokenStore.get();
+  // Don't attach token to the refresh request itself — it depends on the httpOnly cookie
+  const isRefresh = config.url?.includes('/auth/refresh');
+  
+  if (token && !isRefresh) {
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
   return config;
 });
 
-// ─── Response interceptor: handle 401 refresh flow ────────────────────────────
+// ─── Response: silent token refresh on 401 ────────────────────────────────────
 
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
+interface RetryConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
-const processQueue = (error: unknown) => {
-  failedQueue.forEach((p) => {
-    if (error) p.reject(error);
-    else p.resolve();
-  });
-  failedQueue = [];
-};
+// Endpoints that must never trigger a refresh loop
+const NO_REFRESH = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
+
+let refreshing: Promise<void> | null = null;
 
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    const url = originalRequest.url || '';
+  (res) => res,
+  async (error: AxiosError) => {
+    const original = error.config as RetryConfig | undefined;
 
-    // List of endpoints that should NOT trigger the auto-refresh on 401
-    const skipAuthEndpoints = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/forgot-password'];
-    const isAuthEndpoint = skipAuthEndpoints.some((endpoint) => url.includes(endpoint));
+    const isAuthEndpoint = NO_REFRESH.some((e) => original?.url?.includes(e));
+    const shouldRetry =
+      error.response?.status === 401 &&
+      !original?._retry &&
+      !isAuthEndpoint;
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(() => api(originalRequest));
-      }
+    if (!shouldRetry) return Promise.reject(error);
 
-      originalRequest._retry = true;
-      isRefreshing = true;
+    original!._retry = true;
 
-      try {
-        // We use withCredentials: true to send the httpOnly refresh_token cookie
-        const { data } = await axios.post(`${API_URL}/auth/refresh`, {}, {
-          withCredentials: true,
-        });
-
-        tokenStore.setAccess(data.data.accessToken);
-        processQueue(null);
-        return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError);
-        clearSession();
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-          window.location.href = '/login';
+    // Serialise concurrent refresh calls — only one in-flight at a time
+    if (!refreshing) {
+      refreshing = (async () => {
+        try {
+          // httpOnly cookie carries the refresh token automatically (withCredentials: true)
+          const { data } = await axios.post(
+            `${BASE_URL}/auth/refresh`,
+            null,
+            { withCredentials: true },
+          );
+          tokenStore.set(data.data.accessToken);
+        } catch {
+          // Refresh failed — clear everything and force re-login
+          clearSession();
+          if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+            window.location.replace('/login');
+          }
+          throw error;
+        } finally {
+          refreshing = null;
         }
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
+      })();
     }
 
-    return Promise.reject(error);
+    await refreshing;
+    return api(original!);
   },
 );
 

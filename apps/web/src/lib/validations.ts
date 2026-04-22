@@ -50,9 +50,12 @@ export type CreateRestaurantFormData = z.infer<typeof createRestaurantSchema>;
 // ─── Branch ───────────────────────────────────────────────────────────────────
 
 export const createBranchSchema = z.object({
+  restaurantId: z.string().uuid('Select a restaurant.'),
   name: z.string().min(1, 'Name is required.').max(120),
   address: z.string().optional(),
   phone: z.string().optional(),
+  managerName: z.string().min(2, 'Manager name is required.'),
+  managerEmail: z.string().email('Enter a valid manager email.'),
 });
 export type CreateBranchFormData = z.infer<typeof createBranchSchema>;
 

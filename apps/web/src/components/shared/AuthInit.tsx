@@ -5,8 +5,13 @@ import { useAppDispatch } from '@/stores/store';
 import { initAuth } from '@/stores/authSlice';
 
 /**
- * Placed inside Providers, runs initAuth exactly once.
- * Keeps the store in sync with the httpOnly cookie session.
+ * Placed inside Providers (app-wide).
+ * Runs initAuth exactly once — silently refreshes the access token from the
+ * httpOnly cookie and rehydrates the Redux auth state.
+ *
+ * This is intentionally a silent background process:
+ *   - No loading UI here (ProtectedRoute handles the initializing spinner)
+ *   - No routing here (use-auth.ts and ProtectedRoute handle routing)
  */
 export function AuthInit() {
   const dispatch = useAppDispatch();

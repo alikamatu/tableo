@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { formatGHS } from '@tableo/utils';
+import { usePaystackPayment } from 'react-paystack';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -48,7 +49,14 @@ interface MenuCategory {
 }
 
 interface MenuData {
-  branch: { id: string; name: string; logoUrl: string | null; address: string | null };
+  branch: { 
+    id: string; 
+    name: string; 
+    logoUrl: string | null; 
+    address: string | null;
+    paystackPublicKey: string | null;
+    paystackSubaccountCode: string | null;
+  };
   categories: MenuCategory[];
 }
 
@@ -73,9 +81,25 @@ export default function PublicMenuPage({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [tableNumber, setTableNumber] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'counter' | 'online'>('counter');
   const [placing, setPlacing] = useState(false);
   const containerRef = useRef(null);
+
+  const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
+  const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
+
+  // Paystack Config
+  const config = {
+    reference: (new Date()).getTime().toString(),
+    email: customerEmail || 'customer@tableo.app',
+    amount: cartTotal * 100, // Paystack amount is in kobo/pesewas
+    publicKey: menu?.branch.paystackPublicKey || '',
+    subaccount: menu?.branch.paystackSubaccountCode || undefined,
+  };
+
+  const initializePayment = usePaystackPayment(config);
 
   useEffect(() => {
     fetch(`${API_URL}/menu/${slug}`)
@@ -124,11 +148,15 @@ export default function PublicMenuPage({
     );
   };
 
-  const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
-  const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
-
-  const placeOrder = async () => {
+  const placeOrder = async (paystackRef?: string) => {
     if (!menu || cart.length === 0) return;
+    
+    // Basic validation
+    if (paymentMethod === 'online' && !customerEmail) {
+      toast.error('Email is required for online payments');
+      return;
+    }
+
     setPlacing(true);
     try {
       const res = await fetch(`${API_URL}/orders`, {
@@ -138,7 +166,8 @@ export default function PublicMenuPage({
           branchId: menu.branch.id,
           tableNumber: tableNumber || undefined,
           customerName: customerName || undefined,
-          paymentMethod: 'counter',
+          paymentMethod,
+          paystackRef,
           items: cart.map((c) => ({
             menuItemId: c.menuItemId,
             quantity: c.quantity,
@@ -154,6 +183,26 @@ export default function PublicMenuPage({
       toast.error('Submission failed. Try again.');
     } finally {
       setPlacing(false);
+    }
+  };
+
+  const handleCheckout = () => {
+    if (paymentMethod === 'online') {
+      if (!menu?.branch.paystackPublicKey) {
+        toast.error('Online payment is currently unavailable for this restaurant.');
+        return;
+      }
+      
+      initializePayment({
+        onSuccess: (response: any) => {
+          placeOrder(response.reference);
+        },
+        onClose: () => {
+          toast.error('Payment cancelled');
+        },
+      });
+    } else {
+      placeOrder();
     }
   };
 
@@ -303,7 +352,34 @@ export default function PublicMenuPage({
                 ))}
 
                 <div className="space-y-4 pt-6">
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Payment Method</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button"
+                        variant={paymentMethod === 'counter' ? 'primary' : 'outline'}
+                        className="flex-1 rounded-xl h-10 text-xs font-bold"
+                        onClick={() => setPaymentMethod('counter')}
+                      >
+                        Pay at Counter
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant={paymentMethod === 'online' ? 'primary' : 'outline'}
+                        className="flex-1 rounded-xl h-10 text-xs font-bold"
+                        onClick={() => setPaymentMethod('online')}
+                      >
+                        Pay Online
+                      </Button>
+                    </div>
+                  </div>
+
                   <Input label="Identity (Name)" placeholder="e.g. Ama" value={customerName} onValueChange={setCustomerName} className="bg-muted/40 border-border" />
+                  
+                  {paymentMethod === 'online' && (
+                    <Input label="Email Address" type="email" placeholder="ama@example.com" value={customerEmail} onValueChange={setCustomerEmail} className="bg-muted/40 border-border" />
+                  )}
+
                   <Input label="Table Identification" placeholder="e.g. 5" value={tableNumber} onValueChange={setTableNumber} className="bg-muted/40 border-border" />
                 </div>
               </>
@@ -317,8 +393,8 @@ export default function PublicMenuPage({
             </div>
             <div className="flex w-full gap-3">
               <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={() => setCartOpen(false)}>Back</Button>
-              <Button className="flex-[2] rounded-xl h-11 font-black" loading={placing} disabled={cart.length === 0} onClick={placeOrder}>
-                Place Order <Send size={16} className="ml-2" />
+              <Button className="flex-[2] rounded-xl h-11 font-black" loading={placing} disabled={cart.length === 0} onClick={handleCheckout}>
+                {paymentMethod === 'online' ? 'Pay Now' : 'Place Order'} <Send size={16} className="ml-2" />
               </Button>
             </div>
           </ModalFooter>

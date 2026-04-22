@@ -27,7 +27,7 @@ export class UploadsController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   uploadImage(
     @UploadedFile() file: Express.Multer.File,
     @Body('folder') folder?: string,

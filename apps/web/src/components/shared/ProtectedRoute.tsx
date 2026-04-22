@@ -1,54 +1,54 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAppSelector, useAppDispatch } from '@/stores/store';
-import { forceLogout } from '@/stores/authSlice';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAppSelector } from '@/stores/store';
+import { Loader2 } from 'lucide-react';
 
-/**
- * Client-side auth gate.
- * The middleware already handles the redirect for unauthenticated users,
- * but this component provides a second layer and handles the
- * initializing state (silent token refresh in progress).
- */
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, initializing } = useAppSelector((s) => s.auth);
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router  = useRouter();
+  const pathname = usePathname();
+
+  const isStaff         = !!user?.staffMember;
+  const isManagerArea   = pathname.startsWith('/manager-dashboard');
+  const isOwnerArea     = !isManagerArea;
 
   useEffect(() => {
-    // If we're stuck in 'initializing' for too long, force it to false (safety fallback)
-    const timer = setTimeout(() => {
-      if (initializing && !user) {
-        console.warn('Auth initialization timed out, forcing fallback UI.');
-        dispatch(forceLogout()); // This will set initializing=false (via extraReducers or manual logic)
-      }
-    }, 5000);
+    if (initializing) return;
 
-    if (!initializing && !user) {
-      router.replace('/login');
+    if (!user) {
+      const next = typeof window !== 'undefined' ? window.location.pathname : '';
+      router.replace(`/login${next && next !== '/' ? `?next=${encodeURIComponent(next)}` : ''}`);
+      return;
     }
 
-    return () => clearTimeout(timer);
-  }, [initializing, user, router, dispatch]);
+    if (isStaff) {
+      // Staff member hitting an owner-only area
+      if (isOwnerArea) { router.replace('/manager-dashboard'); return; }
+    } else {
+      // Owner hitting manager area
+      if (isManagerArea) { router.replace('/restaurants'); return; }
+      // Owner hasn't completed onboarding
+      if (!user.onboardComplete) { router.replace('/onboarding'); return; }
+    }
+  }, [initializing, user, isStaff, isManagerArea, isOwnerArea, router]);
 
-  // If we already have a user (from login/register), we don't need to wait for initAuth.
-  if (user) return <>{children}</>;
-
-  // While the silent refresh is in flight and we don't have a user, render a loader.
   if (initializing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm font-medium text-muted-foreground animate-pulse">
-            Restoring your session...
-          </p>
+      <div className="flex min-h-screen items-center justify-center bg-bg">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 size={22} className="text-brand animate-spin" />
+          <p className="text-xs text-muted">Restoring session…</p>
         </div>
       </div>
     );
   }
 
-  // initAuth finished and user is null — redirect happening in effect above
-  return null;
+  if (!user) return null;
+  if (isStaff && isOwnerArea) return null;
+  if (!isStaff && isManagerArea) return null;
+  if (!isStaff && !user.onboardComplete) return null;
+
+  return <>{children}</>;
 }

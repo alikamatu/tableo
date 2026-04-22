@@ -32,7 +32,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             className={cn(
-              "flex h-11 w-full rounded-xl border border-input bg-card px-4 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-all",
+              "flex h-11 w-full rounded-xl border border-border bg-bg px-4 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-all",
               leadingContent && "pl-11",
               endContent && "pr-11",
               error && "border-destructive focus-visible:ring-destructive",

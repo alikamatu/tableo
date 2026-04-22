@@ -207,6 +207,40 @@ export class SubscriptionsService {
   }
 
   /**
+   * Start a 30-day native free trial for a specific plan.
+   */
+  async startTrial(ownerId: string, restaurantId: string, plan: 'pro' | 'business') {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+    if (!restaurant) throw new NotFoundException('Restaurant not found');
+    if (restaurant.ownerId !== ownerId) throw new ForbiddenException();
+
+    if (!['pro', 'business'].includes(plan)) {
+      throw new BadRequestException('Trial is only available for Pro and Business plans');
+    }
+
+    // Give 30 days from now
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    await this.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: {
+        plan,
+        subStatus: 'active',
+        subExpiresAt: expiresAt,
+      },
+    });
+
+    return { 
+      message: `30-day trial for ${plan} plan started successfully`,
+      plan,
+      expiresAt 
+    };
+  }
+
+  /**
    * Verify Paystack webhook signature (HMAC SHA-512).
    */
   verifyWebhookSignature(body: string, signature: string): boolean {

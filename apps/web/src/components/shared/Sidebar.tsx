@@ -11,38 +11,49 @@ import { ThemeToggle } from './ThemeToggle';
 import { Avatar } from '@/components/ui/Avatar';
 import { Divider } from '@/components/ui/Divider';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
-const NAV = [
-  { label: 'Restaurants', href: '/restaurants', icon: Store },
-  { label: 'Branches',    href: '/branches',    icon: GitBranch },
-  { label: 'Menu',        href: '/menu',        icon: UtensilsCrossed },
-  { label: 'Orders',      href: '/orders',      icon: ShoppingCart },
-  { label: 'Analytics',   href: '/analytics',   icon: BarChart3 },
-  { label: 'Staff',       href: '/staff',       icon: Users },
-  { label: 'Settings',    href: '/settings',    icon: Settings },
+const OWNER_NAV = [
+  { label: 'Restaurants', href: '/dashboard/restaurants', icon: Store },
+  { label: 'Branches', href: '/dashboard/branches', icon: GitBranch },
+  { label: 'Menu', href: '/dashboard/menu', icon: UtensilsCrossed },
+  { label: 'Orders', href: '/dashboard/orders', icon: ShoppingCart },
+  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { label: 'Staff', href: '/dashboard/staff', icon: Users },
+  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+const MANAGER_NAV = [
+  { label: 'Dashboard', href: '/manager-dashboard', icon: BarChart3 },
+  { label: 'Orders', href: '/manager-dashboard/orders', icon: ShoppingCart },
+  { label: 'Menu', href: '/manager-dashboard/menu', icon: UtensilsCrossed },
+  { label: 'Staff', href: '/manager-dashboard/staff', icon: Users },
+  { label: 'Settings', href: '/manager-dashboard/settings', icon: Settings },
+];
+
+export function Sidebar({ mode = 'owner' }: { mode?: 'owner' | 'manager' }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const nav = mode === 'manager' ? MANAGER_NAV : OWNER_NAV;
+  const logoHref = mode === 'manager' ? '/manager-dashboard' : '/dashboard';
 
   return (
     <aside className="flex h-full w-[216px] flex-shrink-0 flex-col bg-bg px-3 py-5">
 
       {/* ── Logo ─────────────────────────────────────────────────────── */}
       <Link
-        href="/restaurants"
+        href={logoHref}
         className="flex items-center gap-2.5 px-2 py-1.5 mb-6 rounded-lg w-fit hover:bg-subtle transition-colors duration-100"
       >
-        <span className="h-6 w-6 rounded-md bg-brand flex items-center justify-center flex-shrink-0">
-          <span className="text-[11px] font-bold text-white leading-none">T</span>
+        <span className="h-6 w-6 rounded-md flex items-center justify-center flex-shrink-0">
+          <Image src="/logos/logo-icon.png" alt="Tableo logo" width={24} height={24} />
         </span>
         <span className="text-sm font-semibold text-fg tracking-tight">Tableo</span>
       </Link>
 
       {/* ── Nav ──────────────────────────────────────────────────────── */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ label, href, icon: Icon }) => {
+        {nav.map(({ label, href, icon: Icon }) => {
           const active = pathname.startsWith(href);
           return (
             <Link
@@ -92,7 +103,7 @@ export function Sidebar() {
         {/* Sign out */}
         <button
           onClick={logout}
-          className="flex w-full items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-muted hover:text-danger hover:bg-danger/8 transition-colors duration-100"
+          className="flex w-full items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-muted hover:text-danger hover:bg-danger/10 transition-colors duration-100"
         >
           <LogOut size={15} strokeWidth={1.8} className="flex-shrink-0" />
           Sign out

@@ -1,5 +1,3 @@
-// This is your Prisma schema file
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -42,32 +40,46 @@ enum PaymentStatus {
   refunded
 }
 
+enum SettlementType {
+  bank
+  momo
+}
+
 enum StaffRole {
   manager
   cashier
   kitchen
 }
 
+enum OnboardStep {
+  welcome
+  restaurant_info
+  location_hours
+  payment
+  done
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  fullName     String    @map("full_name")
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
   phone        String?
 
-  // ── Email verification ───────────────────────────────────────────────────
-  emailVerified          Boolean   @default(false) @map("email_verified")
-  verificationToken      String?   @unique @map("verification_token")
-  verificationTokenExp   DateTime? @map("verification_token_exp")
+  emailVerified         Boolean   @default(false) @map("email_verified")
+  verificationToken     String?   @unique @map("verification_token")
+  verificationTokenExp  DateTime? @map("verification_token_exp")
 
-  // ── Password reset ───────────────────────────────────────────────────────
-  passwordResetToken     String?   @unique @map("password_reset_token")
-  passwordResetTokenExp  DateTime? @map("password_reset_token_exp")
+  passwordResetToken    String?   @unique @map("password_reset_token")
+  passwordResetTokenExp DateTime? @map("password_reset_token_exp")
 
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  onboardComplete Boolean     @default(false) @map("onboard_complete")
+  onboardStep     OnboardStep @default(welcome) @map("onboard_step")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   restaurants  Restaurant[]
   staffMembers StaffMember[]
@@ -76,17 +88,61 @@ model User {
 }
 
 model Restaurant {
-  id                 String    @id @default(uuid())
-  ownerId            String    @map("owner_id")
-  name               String
-  logoUrl            String?   @map("logo_url")
-  plan               Plan      @default(starter)
-  paystackCustomerId String?   @map("paystack_customer_id")
-  paystackSubId      String?   @map("paystack_sub_id")
-  subStatus          SubStatus @default(active) @map("sub_status")
-  subExpiresAt       DateTime? @map("sub_expires_at")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  id          String @id @default(uuid())
+  ownerId     String @map("owner_id")
+
+  // ── Identity ──────────────────────────────────────────────────────────────
+  name        String
+  slug        String  @unique
+  description String?
+  tagline     String? // Short one-liner shown on the menu page
+  logoUrl     String? @map("logo_url")
+  coverUrl    String? @map("cover_url")
+  cuisine     String[] @default([])
+
+  // ── Contact ───────────────────────────────────────────────────────────────
+  phone   String?
+  email   String?
+  website String?
+
+  // ── Social media handles ──────────────────────────────────────────────────
+  instagramHandle String? @map("instagram_handle")
+  twitterHandle   String? @map("twitter_handle")
+  facebookHandle  String? @map("facebook_handle")
+  tiktokHandle    String? @map("tiktok_handle")
+
+  // ── Location ──────────────────────────────────────────────────────────────
+  address  String?
+  city     String?
+  country  String  @default("Ghana")
+  currency String  @default("GHS")
+
+  // ── Hours ─────────────────────────────────────────────────────────────────
+  openingHours Json? @map("opening_hours")
+
+  // ── Paystack ──────────────────────────────────────────────────────────────
+  paystackPublicKey  String? @map("paystack_public_key")
+  paystackSecretKey  String? @map("paystack_secret_key")
+  paystackCustomerId String? @map("paystack_customer_id")
+  paystackSubId      String? @map("paystack_sub_id")
+
+  // ── Settlement (split payments) ───────────────────────────────────────────
+  settlementType          SettlementType? @map("settlement_type")
+  settlementBank          String?         @map("settlement_bank")
+  settlementAccountNumber String?         @map("settlement_account_number")
+  paystackSubaccountCode  String?         @map("paystack_subaccount_code")
+
+  // ── Subscription ─────────────────────────────────────────────────────────
+  plan         Plan      @default(starter)
+  subStatus    SubStatus @default(active) @map("sub_status")
+  subExpiresAt DateTime? @map("sub_expires_at")
+
+  // ── Onboarding ────────────────────────────────────────────────────────────
+  onboardStep     OnboardStep @default(welcome) @map("onboard_step")
+  onboardComplete Boolean     @default(false)   @map("onboard_complete")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
 
   owner          User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   branches       Branch[]
@@ -94,6 +150,7 @@ model Restaurant {
   menuItems      MenuItem[]
 
   @@index([ownerId])
+  @@index([slug])
   @@map("restaurants")
 }
 
@@ -107,7 +164,7 @@ model Branch {
   isActive     Boolean  @default(true) @map("is_active")
   openingHours Json?    @map("opening_hours")
   createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @updatedAt      @map("updated_at")
 
   restaurant         Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   orders             Order[]
@@ -126,7 +183,7 @@ model MenuCategory {
   name         String
   sortOrder    Int      @default(0) @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @updatedAt      @map("updated_at")
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   menuItems  MenuItem[]
@@ -144,12 +201,12 @@ model MenuItem {
   basePrice    Decimal  @map("base_price") @db.Decimal(10, 2)
   imageUrl     String?  @map("image_url")
   isAvailable  Boolean  @default(true) @map("is_available")
-  sortOrder    Int      @default(0) @map("sort_order")
+  sortOrder    Int      @default(0)    @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @updatedAt      @map("updated_at")
 
   restaurant      Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  category        MenuCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category        MenuCategory     @relation(fields: [categoryId],   references: [id], onDelete: Cascade)
   branchOverrides BranchOverride[]
   orderItems      OrderItem[]
 
@@ -165,10 +222,10 @@ model BranchOverride {
   priceOverride Decimal? @map("price_override") @db.Decimal(10, 2)
   isAvailable   Boolean? @map("is_available")
   createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedAt     DateTime @updatedAt      @map("updated_at")
 
-  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation(fields: [branchId],    references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId],   references: [id], onDelete: Cascade)
 
   @@unique([branchId, menuItemId])
   @@map("branch_overrides")
@@ -181,11 +238,11 @@ model Order {
   customerName  String?       @map("customer_name")
   status        OrderStatus   @default(pending)
   paymentMethod PaymentMethod @default(counter) @map("payment_method")
-  paymentStatus PaymentStatus @default(unpaid) @map("payment_status")
+  paymentStatus PaymentStatus @default(unpaid)  @map("payment_status")
   total         Decimal       @db.Decimal(10, 2)
   paystackRef   String?       @map("paystack_ref")
   createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  updatedAt     DateTime      @updatedAt      @map("updated_at")
 
   branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
@@ -204,8 +261,8 @@ model OrderItem {
   quantity     Int
   note         String?
 
-  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  order    Order    @relation(fields: [orderId],     references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId],  references: [id])
 
   @@index([orderId])
   @@map("order_items")
@@ -218,10 +275,10 @@ model StaffMember {
   role      StaffRole
   isActive  Boolean   @default(true) @map("is_active")
   invitedAt DateTime  @default(now()) @map("invited_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
 
   branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId],   references: [id], onDelete: Cascade)
 
   @@unique([branchId, userId])
   @@index([branchId])
@@ -233,12 +290,12 @@ model AnalyticsSnapshot {
   branchId      String   @map("branch_id")
   date          DateTime @db.Date
   totalOrders   Int      @default(0) @map("total_orders")
-  totalRevenue  Decimal  @default(0) @map("total_revenue") @db.Decimal(12, 2)
+  totalRevenue  Decimal  @default(0) @map("total_revenue")  @db.Decimal(12, 2)
   avgOrderValue Decimal  @default(0) @map("avg_order_value") @db.Decimal(10, 2)
   ordersByHour  Json     @default("{}") @map("orders_by_hour")
   topItems      Json     @default("[]") @map("top_items")
   createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedAt     DateTime @updatedAt      @map("updated_at")
 
   branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 

@@ -41,10 +41,32 @@ export const fetchBranches = createAsyncThunk(
   },
 );
 
+export const fetchBranch = createAsyncThunk(
+  'branch/fetchOne',
+  async (
+    { restaurantId, branchId }: { restaurantId: string; branchId: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const { data } = await api.get(`/restaurants/${restaurantId}/branches/${branchId}`);
+      return data.data as Branch;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message ?? 'Failed to load branch');
+    }
+  },
+);
+
 export const createBranch = createAsyncThunk(
   'branch/create',
   async (
-    { restaurantId, ...payload }: { restaurantId: string; name: string; address?: string; phone?: string },
+    { restaurantId, ...payload }: { 
+      restaurantId: string; 
+      name: string; 
+      address?: string; 
+      phone?: string;
+      managerName: string;
+      managerEmail: string;
+    },
     { rejectWithValue },
   ) => {
     try {
@@ -118,6 +140,24 @@ const branchSlice = createSlice({
         }
       })
       .addCase(fetchBranches.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch one
+    builder
+      .addCase(fetchBranch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchBranch.fulfilled, (state, action) => {
+        state.loading = false;
+        state.current = action.payload;
+        const idx = state.branches.findIndex((b) => b.id === action.payload.id);
+        if (idx >= 0) state.branches[idx] = action.payload;
+        else state.branches.push(action.payload);
+      })
+      .addCase(fetchBranch.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

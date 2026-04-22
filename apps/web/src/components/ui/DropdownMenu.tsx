@@ -1,166 +1,85 @@
 'use client';
 
-import { createContext, useContext, useRef, useEffect, useState, ReactNode } from 'react';
+import * as React from 'react';
+import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
+import { cn } from '@/lib/utils';
 
-interface DropdownContextType {
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-  close: () => void;
-}
+const DropdownMenu = DropdownMenuPrimitive.Root;
+const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 
-const DropdownContext = createContext<DropdownContextType | null>(null);
+const DropdownMenuContent = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <DropdownMenuPrimitive.Portal>
+    <DropdownMenuPrimitive.Content
+      ref={ref}
+      sideOffset={sideOffset}
+      className={cn(
+        "z-50 min-w-[12rem] overflow-hidden rounded-2xl border border-border bg-surface p-1 text-foreground shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        className
+      )}
+      {...props}
+    />
+  </DropdownMenuPrimitive.Portal>
+));
+DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
-const useDropdown = () => {
-  const context = useContext(DropdownContext);
-  if (!context) {
-    throw new Error('Dropdown components must be used within DropdownMenu');
+const DropdownMenuItem = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
+    inset?: boolean;
   }
-  return context;
+>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex cursor-pointer select-none items-center rounded-xl px-3 py-2 text-sm font-medium outline-none transition-colors hover:bg-subtle focus:bg-subtle data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+));
+DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
+
+const DropdownMenuLabel = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
+    inset?: boolean;
+  }
+>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Label
+    ref={ref}
+    className={cn(
+      "px-2 py-1.5 text-xs font-black uppercase tracking-widest text-muted-foreground",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+));
+DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
+
+const DropdownMenuSeparator = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Separator
+    ref={ref}
+    className={cn("-mx-1 my-1 h-px bg-border", className)}
+    {...props}
+  />
+));
+DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
+
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuPortal,
 };
-
-interface DropdownMenuProps {
-  children: ReactNode;
-}
-
-export function DropdownMenu({ children }: DropdownMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <DropdownContext.Provider value={{ isOpen, setIsOpen, close: () => setIsOpen(false) }}>
-      <div className="relative inline-block">{children}</div>
-    </DropdownContext.Provider>
-  );
-}
-
-interface DropdownMenuTriggerProps {
-  children: ReactNode;
-  className?: string;
-}
-
-export function DropdownMenuTrigger({ children, className }: DropdownMenuTriggerProps) {
-  const { isOpen, setIsOpen } = useDropdown();
-
-  return (
-    <button
-      className={className}
-      onClick={() => setIsOpen(!isOpen)}
-      aria-haspopup="menu"
-      aria-expanded={isOpen}
-    >
-      {children}
-    </button>
-  );
-}
-
-interface DropdownMenuContentProps {
-  children: ReactNode;
-  align?: 'start' | 'end';
-  className?: string;
-}
-
-export function DropdownMenuContent({ children, align = 'start', className = '' }: DropdownMenuContentProps) {
-  const { isOpen, close } = useDropdown();
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (contentRef.current && !contentRef.current.contains(event.target as Node)) {
-        close();
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        close();
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, close]);
-
-  if (!isOpen) return null;
-
-  const alignClass = align === 'end' ? 'right-0' : 'left-0';
-
-  return (
-    <div
-      ref={contentRef}
-      className={`absolute top-full ${alignClass} mt-2 z-50 bg-surface ${className}`}
-      role="menu"
-    >
-      {children}
-    </div>
-  );
-}
-
-interface DropdownMenuItemProps {
-  children: ReactNode;
-  onClick?: () => void;
-  asChild?: boolean;
-  className?: string;
-}
-
-export function DropdownMenuItem({
-  children,
-  onClick,
-  asChild,
-  className = '',
-}: DropdownMenuItemProps) {
-  const { close } = useDropdown();
-
-  const handleClick = () => {
-    onClick?.();
-    close();
-  };
-
-  if (asChild) {
-    return (
-      <div
-        onClick={handleClick}
-        className={className}
-        role="menuitem"
-      >
-        {children}
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={handleClick}
-      className={className}
-      role="menuitem"
-    >
-      {children}
-    </button>
-  );
-}
-
-interface DropdownMenuLabelProps {
-  children: ReactNode;
-  className?: string;
-}
-
-export function DropdownMenuLabel({ children, className = '' }: DropdownMenuLabelProps) {
-  return (
-    <div className={className} role="menuitem" aria-disabled>
-      {children}
-    </div>
-  );
-}
-
-interface DropdownMenuSeparatorProps {
-  className?: string;
-}
-
-export function DropdownMenuSeparator({ className = '' }: DropdownMenuSeparatorProps) {
-  return <div className={`h-px bg-border my-1 ${className}`} role="separator" />;
-}
