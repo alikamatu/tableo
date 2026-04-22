@@ -4,11 +4,26 @@ import * as React from 'react';
 import { useEffect, useRef, useCallback } from 'react';
 import { gsap } from 'gsap';
 import {
-  Store, Globe, Instagram, Twitter, Facebook,
-  MapPin, Phone, Mail, Clock, CreditCard,
-  Edit3, Check, X, ChevronDown, ChevronUp,
-  ExternalLink, Copy, AlertCircle, Loader2,
-  Building2, Banknote, QrCode, Upload,
+  Store,
+  Globe,
+  Instagram,
+  Twitter,
+  Facebook,
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  CreditCard,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Copy,
+  AlertCircle,
+  Loader2,
+  Building2,
+  Banknote,
+  Upload,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,10 +31,11 @@ import { z } from 'zod';
 
 import { useAppDispatch, useAppSelector } from '@/stores/store';
 import {
-  fetchRestaurants, updateRestaurant,
-  type Restaurant, type RestaurantUpdatePayload,
+  fetchRestaurants,
+  updateRestaurant,
+  type Restaurant,
+  type RestaurantUpdatePayload,
 } from '@/stores/restaurantSlice';
-import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Alert, useAlert } from '@/components/ui/Alert';
@@ -30,49 +46,82 @@ import api from '@/lib/api';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CUISINE_OPTIONS = [
-  'Ghanaian', 'West African', 'Continental', 'Chinese', 'Indian',
-  'Italian', 'American', 'Fast Food', 'Seafood', 'Vegan', 'BBQ', 'Bakery',
+  'Ghanaian',
+  'West African',
+  'Continental',
+  'Chinese',
+  'Indian',
+  'Italian',
+  'American',
+  'Fast Food',
+  'Seafood',
+  'Vegan',
+  'BBQ',
+  'Bakery',
 ];
 
-const DAYS = ['mon','tue','wed','thu','fri','sat','sun'] as const;
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const DAY_LABELS: Record<string, string> = {
-  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday',
-  thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
+  mon: 'Monday',
+  tue: 'Tuesday',
+  wed: 'Wednesday',
+  thu: 'Thursday',
+  fri: 'Friday',
+  sat: 'Saturday',
+  sun: 'Sunday',
 };
 
-const planBadge: Record<string, 'muted' | 'brand' | 'success'> = {
-  starter: 'muted', pro: 'brand', business: 'success',
+const planBadge: Record<string, 'muted' | 'primary' | 'success'> = {
+  starter: 'muted',
+  pro: 'primary',
+  business: 'success',
 };
 
 // ─── Zod schema (full restaurant update) ─────────────────────────────────────
 
 const schema = z.object({
-  name:            z.string().min(2, 'Name must be at least 2 characters.').max(120),
-  slug:            z.string().min(3).max(60).regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, hyphens only.'),
-  tagline:         z.string().max(160).optional().or(z.literal('')),
-  description:     z.string().max(500).optional().or(z.literal('')),
-  logoUrl:         z.string().url().optional().or(z.literal('')),
-  coverUrl:        z.string().url().optional().or(z.literal('')),
+  name: z.string().min(2, 'Name must be at least 2 characters.').max(120),
+  slug: z
+    .string()
+    .min(3)
+    .max(60)
+    .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, hyphens only.'),
+  tagline: z.string().max(160).optional().or(z.literal('')),
+  description: z.string().max(500).optional().or(z.literal('')),
+  logoUrl: z.string().url().optional().or(z.literal('')),
+  coverUrl: z.string().url().optional().or(z.literal('')),
   // Contact
-  phone:           z.string().max(20).optional().or(z.literal('')),
-  email:           z.string().email('Enter a valid email.').optional().or(z.literal('')),
-  website:         z.string().url('Enter a full URL (https://…)').optional().or(z.literal('')),
+  phone: z.string().max(20).optional().or(z.literal('')),
+  email: z.string().email('Enter a valid email.').optional().or(z.literal('')),
+  website: z.string().url('Enter a full URL (https://…)').optional().or(z.literal('')),
   // Social
   instagramHandle: z.string().max(60).optional().or(z.literal('')),
-  twitterHandle:   z.string().max(60).optional().or(z.literal('')),
-  facebookHandle:  z.string().max(100).optional().or(z.literal('')),
-  tiktokHandle:    z.string().max(60).optional().or(z.literal('')),
+  twitterHandle: z.string().max(60).optional().or(z.literal('')),
+  facebookHandle: z.string().max(100).optional().or(z.literal('')),
+  tiktokHandle: z.string().max(60).optional().or(z.literal('')),
   // Location
-  address:         z.string().max(300).optional().or(z.literal('')),
-  city:            z.string().max(80).optional().or(z.literal('')),
-  country:         z.string().max(80).optional().or(z.literal('')),
-  currency:        z.string().length(3, 'Currency must be a 3-letter code (e.g. GHS)').optional().or(z.literal('')),
+  address: z.string().max(300).optional().or(z.literal('')),
+  city: z.string().max(80).optional().or(z.literal('')),
+  country: z.string().max(80).optional().or(z.literal('')),
+  currency: z
+    .string()
+    .length(3, 'Currency must be a 3-letter code (e.g. GHS)')
+    .optional()
+    .or(z.literal('')),
   // Paystack
-  paystackPublicKey: z.string().startsWith('pk_', 'Must start with pk_').optional().or(z.literal('')),
-  paystackSecretKey: z.string().startsWith('sk_', 'Must start with sk_').optional().or(z.literal('')),
+  paystackPublicKey: z
+    .string()
+    .startsWith('pk_', 'Must start with pk_')
+    .optional()
+    .or(z.literal('')),
+  paystackSecretKey: z
+    .string()
+    .startsWith('sk_', 'Must start with sk_')
+    .optional()
+    .or(z.literal('')),
   // Settlement
-  settlementType:          z.enum(['bank','momo']).optional(),
-  settlementBank:          z.string().max(120).optional().or(z.literal('')),
+  settlementType: z.enum(['bank', 'momo']).optional(),
+  settlementBank: z.string().max(120).optional().or(z.literal('')),
   settlementAccountNumber: z.string().max(20).optional().or(z.literal('')),
 });
 
@@ -82,7 +131,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function RestaurantsPage() {
   const dispatch = useAppDispatch();
-  const { restaurants, loading, saving, error } = useAppSelector((s) => s.restaurant);
+  const { restaurants, loading, saving } = useAppSelector((s) => s.restaurant);
   const restaurant = restaurants[0] ?? null;
   const pageRef = useRef<HTMLDivElement>(null);
 
@@ -101,18 +150,18 @@ export default function RestaurantsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 size={22} className="text-brand animate-spin" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 size={22} className="animate-spin text-brand" />
       </div>
     );
   }
 
   if (!restaurant) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-4">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
         <Store size={32} className="text-muted" />
         <p className="text-sm font-medium text-fg">No restaurant found</p>
-        <p className="text-sm text-muted max-w-xs">
+        <p className="max-w-xs text-sm text-muted">
           Complete onboarding to set up your restaurant profile.
         </p>
       </div>
@@ -132,13 +181,7 @@ export default function RestaurantsPage() {
 
 // ─── Main editor ──────────────────────────────────────────────────────────────
 
-function RestaurantEditor({
-  restaurant,
-  saving,
-}: {
-  restaurant: Restaurant;
-  saving: boolean;
-}) {
+function RestaurantEditor({ restaurant, saving }: { restaurant: Restaurant; saving: boolean }) {
   const dispatch = useAppDispatch();
   const { show, node: alertNode } = useAlert();
   const [expandedSection, setExpandedSection] = React.useState<string | null>('identity');
@@ -159,80 +202,97 @@ function RestaurantEditor({
   );
 
   const {
-    register, handleSubmit, reset, watch, setValue,
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name:                    restaurant.name,
-      slug:                    restaurant.slug,
-      tagline:                 restaurant.tagline ?? '',
-      description:             restaurant.description ?? '',
-      logoUrl:                 restaurant.logoUrl ?? '',
-      coverUrl:                restaurant.coverUrl ?? '',
-      phone:                   restaurant.phone ?? '',
-      email:                   restaurant.email ?? '',
-      website:                 restaurant.website ?? '',
-      instagramHandle:         restaurant.instagramHandle ?? '',
-      twitterHandle:           restaurant.twitterHandle ?? '',
-      facebookHandle:          restaurant.facebookHandle ?? '',
-      tiktokHandle:            restaurant.tiktokHandle ?? '',
-      address:                 restaurant.address ?? '',
-      city:                    restaurant.city ?? '',
-      country:                 restaurant.country ?? 'Ghana',
-      currency:                restaurant.currency ?? 'GHS',
-      paystackPublicKey:       restaurant.paystackPublicKey ?? '',
-      paystackSecretKey:       '',
-      settlementType:          (restaurant.settlementType as 'bank' | 'momo') ?? undefined,
-      settlementBank:          restaurant.settlementBank ?? '',
+      name: restaurant.name,
+      slug: restaurant.slug,
+      tagline: restaurant.tagline ?? '',
+      description: restaurant.description ?? '',
+      logoUrl: restaurant.logoUrl ?? '',
+      coverUrl: restaurant.coverUrl ?? '',
+      phone: restaurant.phone ?? '',
+      email: restaurant.email ?? '',
+      website: restaurant.website ?? '',
+      instagramHandle: restaurant.instagramHandle ?? '',
+      twitterHandle: restaurant.twitterHandle ?? '',
+      facebookHandle: restaurant.facebookHandle ?? '',
+      tiktokHandle: restaurant.tiktokHandle ?? '',
+      address: restaurant.address ?? '',
+      city: restaurant.city ?? '',
+      country: restaurant.country ?? 'Ghana',
+      currency: restaurant.currency ?? 'GHS',
+      paystackPublicKey: restaurant.paystackPublicKey ?? '',
+      paystackSecretKey: '',
+      settlementType: (restaurant.settlementType as 'bank' | 'momo') ?? undefined,
+      settlementBank: restaurant.settlementBank ?? '',
       settlementAccountNumber: restaurant.settlementAccountNumber ?? '',
     },
   });
 
-  const onSubmit = useCallback(async (values: FormValues) => {
-    const payload: RestaurantUpdatePayload & { id: string } = {
-      id: restaurant.id,
-      ...values,
-      cuisine: cuisineList,
-      openingHours: hours,
-    };
-    // Don't send empty secret key — would overwrite with blank
-    if (!payload.paystackSecretKey) delete payload.paystackSecretKey;
+  const onSubmit = useCallback(
+    async (values: FormValues) => {
+      const payload: RestaurantUpdatePayload & { id: string } = {
+        id: restaurant.id,
+        ...values,
+        cuisine: cuisineList,
+        openingHours: hours,
+      };
+      // Don't send empty secret key — would overwrite with blank
+      if (!payload.paystackSecretKey) delete payload.paystackSecretKey;
 
-    // Convert empty strings to null for optional formatted fields to bypass backend validation
-    const nullableFields: (keyof typeof payload)[] = [
-      'tagline', 'description', 'logoUrl', 'coverUrl', 'phone', 'email', 'website',
-      'instagramHandle', 'twitterHandle', 'facebookHandle', 'tiktokHandle',
-      'address', 'city', 'paystackPublicKey', 
-      'settlementType', 'settlementBank', 'settlementAccountNumber'
-    ];
-    for (const key of nullableFields) {
-      if ((payload as any)[key] === '') {
-        (payload as any)[key] = null;
+      // Convert empty strings to null for optional formatted fields to bypass backend validation
+      const nullableFields: (keyof typeof payload)[] = [
+        'tagline',
+        'description',
+        'logoUrl',
+        'coverUrl',
+        'phone',
+        'email',
+        'website',
+        'instagramHandle',
+        'twitterHandle',
+        'facebookHandle',
+        'tiktokHandle',
+        'address',
+        'city',
+        'paystackPublicKey',
+        'settlementType',
+        'settlementBank',
+        'settlementAccountNumber',
+      ];
+      for (const key of nullableFields) {
+        if ((payload as Record<string, unknown>)[key] === '') {
+          (payload as Record<string, unknown>)[key] = null;
+        }
       }
-    }
-    
-    // These fields cannot be null in the DB, fallback to defaults if empty
-    if (payload.currency === '') payload.currency = 'GHS';
-    if (payload.country === '') payload.country = 'Ghana';
 
-    const result = await dispatch(updateRestaurant(payload));
-    if (updateRestaurant.fulfilled.match(result)) {
-      show('success', 'Restaurant updated successfully.');
-      reset(values); // reset dirty state
-    } else {
-      const err = result.payload as { message: string } | undefined;
-      show('error', err?.message ?? 'Failed to save changes. Please try again.');
-    }
-  }, [dispatch, restaurant.id, cuisineList, hours, show, reset]);
+      // These fields cannot be null in the DB, fallback to defaults if empty
+      if (payload.currency === '') payload.currency = 'GHS';
+      if (payload.country === '') payload.country = 'Ghana';
 
-  const toggleSection = (id: string) =>
-    setExpandedSection((prev) => (prev === id ? null : id));
+      const result = await dispatch(updateRestaurant(payload));
+      if (updateRestaurant.fulfilled.match(result)) {
+        show('success', 'Restaurant updated successfully.');
+        reset(values); // reset dirty state
+      } else {
+        const err = result.payload as { message: string } | undefined;
+        show('error', err?.message ?? 'Failed to save changes. Please try again.');
+      }
+    },
+    [dispatch, restaurant.id, cuisineList, hours, show, reset],
+  );
+
+  const toggleSection = (id: string) => setExpandedSection((prev) => (prev === id ? null : id));
 
   const toggleCuisine = (c: string) =>
-    setCuisineList((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
-    );
+    setCuisineList((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
 
   const updateHours = (day: string, field: string, value: string | boolean) =>
     setHours((prev) => ({
@@ -243,15 +303,17 @@ function RestaurantEditor({
   const menuUrl = `https://tableo.app/menu/${restaurant.slug}`;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 max-w-2xl">
-
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-3">
       {/* Sticky save bar */}
       {(isDirty || cuisineList.join() !== (restaurant.cuisine ?? []).join()) && (
-        <StickyBar saving={saving} onDiscard={() => {
-          reset();
-          setCuisineList(restaurant.cuisine ?? []);
-          setHours(restaurant.openingHours ?? hours);
-        }} />
+        <StickyBar
+          saving={saving}
+          onDiscard={() => {
+            reset();
+            setCuisineList(restaurant.cuisine ?? []);
+            setHours(restaurant.openingHours ?? hours);
+          }}
+        />
       )}
 
       {alertNode}
@@ -269,30 +331,34 @@ function RestaurantEditor({
         onToggle={() => toggleSection('identity')}
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FieldInput label="Restaurant name *" error={errors.name?.message} {...register('name')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FieldInput
+              label="Restaurant name *"
+              error={errors.name?.message}
+              {...register('name')}
+            />
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-fg">Menu URL slug *</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted pointer-events-none">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted">
                   /menu/
                 </span>
                 <input
                   className={cn(
-                    'w-full h-10 rounded-md bg-subtle pl-14 pr-3 text-sm text-fg',
-                    'outline-none focus:ring-2 focus:ring-brand/40 focus:bg-surface transition-all',
+                    'h-10 w-full rounded-md bg-subtle pl-14 pr-3 text-sm text-fg',
+                    'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40',
                     errors.slug && 'ring-2 ring-danger/50',
                   )}
                   {...register('slug')}
                 />
               </div>
               {errors.slug && <p className="text-xs text-danger">{errors.slug.message}</p>}
-              <div className="flex items-center gap-2 mt-1">
+              <div className="mt-1 flex items-center gap-2">
                 <a
                   href={menuUrl}
                   target="_blank"
-                  rel="noopener"
-                  className="text-xs text-brand hover:underline flex items-center gap-1"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-brand hover:underline"
                 >
                   {menuUrl} <ExternalLink size={10} />
                 </a>
@@ -311,26 +377,36 @@ function RestaurantEditor({
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-fg">Description</label>
             <textarea
-              className="w-full h-24 rounded-md bg-subtle px-3 py-2.5 text-sm text-fg placeholder:text-muted outline-none focus:ring-2 focus:ring-brand/40 focus:bg-surface transition-all resize-none"
+              className="h-24 w-full resize-none rounded-md bg-subtle px-3 py-2.5 text-sm text-fg outline-none transition-all placeholder:text-muted focus:bg-surface focus:ring-2 focus:ring-brand/40"
               placeholder="What makes your restaurant special?"
               {...register('description')}
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Logo upload */}
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-fg">Logo</label>
               <div
-                className="h-24 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted hover:border-brand/40 hover:text-brand transition-colors cursor-pointer relative overflow-hidden"
+                className="relative flex h-24 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-border text-muted transition-colors hover:border-brand/40 hover:text-brand"
                 onClick={() => document.getElementById('logo-upload')?.click()}
               >
                 {logoUploading ? (
-                  <><Loader2 size={20} className="animate-spin text-brand" /><span className="text-xs">Uploading…</span></>
+                  <>
+                    <Loader2 size={20} className="animate-spin text-brand" />
+                    <span className="text-xs">Uploading…</span>
+                  </>
                 ) : watch('logoUrl') ? (
-                  <img src={watch('logoUrl')} alt="logo" className="h-16 w-16 object-contain rounded-lg" />
+                  <img
+                    src={watch('logoUrl')}
+                    alt="logo"
+                    className="h-16 w-16 rounded-lg object-contain"
+                  />
                 ) : (
-                  <><Upload size={20} /><span className="text-xs">Upload logo</span></>
+                  <>
+                    <Upload size={20} />
+                    <span className="text-xs">Upload logo</span>
+                  </>
                 )}
                 <input
                   id="logo-upload"
@@ -361,7 +437,13 @@ function RestaurantEditor({
                 />
               </div>
               {watch('logoUrl') && (
-                <button type="button" onClick={() => setValue('logoUrl', '', { shouldDirty: true })} className="text-xs text-danger hover:underline">Remove logo</button>
+                <button
+                  type="button"
+                  onClick={() => setValue('logoUrl', '', { shouldDirty: true })}
+                  className="text-xs text-danger hover:underline"
+                >
+                  Remove logo
+                </button>
               )}
             </div>
 
@@ -369,15 +451,25 @@ function RestaurantEditor({
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-fg">Cover image</label>
               <div
-                className="h-24 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted hover:border-brand/40 hover:text-brand transition-colors cursor-pointer relative overflow-hidden"
+                className="relative flex h-24 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-border text-muted transition-colors hover:border-brand/40 hover:text-brand"
                 onClick={() => document.getElementById('cover-upload')?.click()}
               >
                 {coverUploading ? (
-                  <><Loader2 size={20} className="animate-spin text-brand" /><span className="text-xs">Uploading…</span></>
+                  <>
+                    <Loader2 size={20} className="animate-spin text-brand" />
+                    <span className="text-xs">Uploading…</span>
+                  </>
                 ) : watch('coverUrl') ? (
-                  <img src={watch('coverUrl')} alt="cover" className="h-16 w-16 object-cover rounded-lg" />
+                  <img
+                    src={watch('coverUrl')}
+                    alt="cover"
+                    className="h-16 w-16 rounded-lg object-cover"
+                  />
                 ) : (
-                  <><Upload size={20} /><span className="text-xs">Upload cover</span></>
+                  <>
+                    <Upload size={20} />
+                    <span className="text-xs">Upload cover</span>
+                  </>
                 )}
                 <input
                   id="cover-upload"
@@ -408,7 +500,13 @@ function RestaurantEditor({
                 />
               </div>
               {watch('coverUrl') && (
-                <button type="button" onClick={() => setValue('coverUrl', '', { shouldDirty: true })} className="text-xs text-danger hover:underline">Remove cover</button>
+                <button
+                  type="button"
+                  onClick={() => setValue('coverUrl', '', { shouldDirty: true })}
+                  className="text-xs text-danger hover:underline"
+                >
+                  Remove cover
+                </button>
               )}
             </div>
           </div>
@@ -423,7 +521,7 @@ function RestaurantEditor({
                   type="button"
                   onClick={() => toggleCuisine(c)}
                   className={cn(
-                    'px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150',
+                    'rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150',
                     cuisineList.includes(c)
                       ? 'bg-brand text-white'
                       : 'bg-subtle text-muted hover:text-fg',
@@ -444,7 +542,7 @@ function RestaurantEditor({
         expanded={expandedSection === 'contact'}
         onToggle={() => toggleSection('contact')}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FieldInput
             label="Phone"
             type="tel"
@@ -481,7 +579,7 @@ function RestaurantEditor({
         expanded={expandedSection === 'social'}
         onToggle={() => toggleSection('social')}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FieldInput
             label="Instagram"
             placeholder="yourrestaurant"
@@ -511,7 +609,7 @@ function RestaurantEditor({
             placeholder="yourrestaurant"
             startIcon={
               <svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor">
-                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/>
+                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z" />
               </svg>
             }
             hint="Without the @"
@@ -535,10 +633,16 @@ function RestaurantEditor({
             startIcon={<MapPin size={14} />}
             {...register('address')}
           />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <FieldInput label="City" placeholder="Accra"  {...register('city')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <FieldInput label="City" placeholder="Accra" {...register('city')} />
             <FieldInput label="Country" placeholder="Ghana" {...register('country')} />
-            <FieldInput label="Currency" placeholder="GHS" hint="3-letter ISO code" error={errors.currency?.message} {...register('currency')} />
+            <FieldInput
+              label="Currency"
+              placeholder="GHS"
+              hint="3-letter ISO code"
+              error={errors.currency?.message}
+              {...register('currency')}
+            />
           </div>
 
           {/* Opening hours */}
@@ -547,30 +651,30 @@ function RestaurantEditor({
               <Clock size={14} className="text-muted" />
               <label className="text-sm font-medium text-fg">Opening hours</label>
             </div>
-            <div className="bg-subtle rounded-xl overflow-hidden divide-y divide-border">
+            <div className="divide-y divide-border overflow-hidden rounded-xl bg-subtle">
               {DAYS.map((day) => {
                 const h = hours[day] ?? { open: '08:00', close: '22:00', closed: false };
                 return (
                   <div key={day} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="text-xs font-medium text-fg w-9 flex-shrink-0">
+                    <span className="w-9 flex-shrink-0 text-xs font-medium text-fg">
                       {DAY_LABELS[day]?.slice(0, 3)}
                     </span>
                     {h.closed ? (
                       <span className="flex-1 text-xs text-muted">Closed</span>
                     ) : (
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex flex-1 items-center gap-2">
                         <input
                           type="time"
                           value={h.open}
                           onChange={(e) => updateHours(day, 'open', e.target.value)}
-                          className="h-7 text-xs rounded-md bg-bg px-2 text-fg outline-none focus:ring-1 focus:ring-brand/40"
+                          className="h-7 rounded-md bg-bg px-2 text-xs text-fg outline-none focus:ring-1 focus:ring-brand/40"
                         />
-                        <span className="text-muted text-xs">–</span>
+                        <span className="text-xs text-muted">–</span>
                         <input
                           type="time"
                           value={h.close}
                           onChange={(e) => updateHours(day, 'close', e.target.value)}
-                          className="h-7 text-xs rounded-md bg-bg px-2 text-fg outline-none focus:ring-1 focus:ring-brand/40"
+                          className="h-7 rounded-md bg-bg px-2 text-xs text-fg outline-none focus:ring-1 focus:ring-brand/40"
                         />
                       </div>
                     )}
@@ -578,7 +682,7 @@ function RestaurantEditor({
                       type="button"
                       onClick={() => updateHours(day, 'closed', !h.closed)}
                       className={cn(
-                        'text-2xs px-2 py-0.5 rounded-full transition-colors flex-shrink-0',
+                        'flex-shrink-0 rounded-full px-2 py-0.5 text-2xs transition-colors',
                         h.closed ? 'bg-danger/10 text-danger' : 'bg-bg text-muted hover:text-fg',
                       )}
                     >
@@ -605,7 +709,7 @@ function RestaurantEditor({
             message="Your secret key is stored encrypted and never returned in API responses. Enter it only when you want to update it."
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FieldInput
               label="Public key"
               placeholder="pk_test_…"
@@ -620,7 +724,7 @@ function RestaurantEditor({
                 <button
                   type="button"
                   onClick={() => setShowSecretKey((p) => !p)}
-                  className="text-xs text-muted hover:text-fg transition-colors"
+                  className="text-xs text-muted transition-colors hover:text-fg"
                 >
                   {showSecretKey ? 'Hide' : 'Show'}
                 </button>
@@ -629,28 +733,32 @@ function RestaurantEditor({
                 type={showSecretKey ? 'text' : 'password'}
                 placeholder="sk_test_… (leave blank to keep current)"
                 className={cn(
-                  'w-full h-10 rounded-md bg-subtle px-3 text-sm text-fg placeholder:text-muted',
-                  'outline-none focus:ring-2 focus:ring-brand/40 focus:bg-surface transition-all',
+                  'h-10 w-full rounded-md bg-subtle px-3 text-sm text-fg placeholder:text-muted',
+                  'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40',
                   errors.paystackSecretKey && 'ring-2 ring-danger/50',
                 )}
                 {...register('paystackSecretKey')}
               />
-              {errors.paystackSecretKey && <p className="text-xs text-danger">{errors.paystackSecretKey.message}</p>}
-              <p className="text-xs text-muted">{restaurant.paystackPublicKey ? '✓ Secret key is set' : 'Not configured'}</p>
+              {errors.paystackSecretKey && (
+                <p className="text-xs text-danger">{errors.paystackSecretKey.message}</p>
+              )}
+              <p className="text-xs text-muted">
+                {restaurant.paystackPublicKey ? '✓ Secret key is set' : 'Not configured'}
+              </p>
             </div>
           </div>
 
           {/* Settlement */}
-          <div className="border-t border-border pt-4 space-y-4">
+          <div className="space-y-4 border-t border-border pt-4">
             <div className="flex items-center gap-2">
               <Banknote size={15} className="text-muted" />
               <p className="text-sm font-medium text-fg">Settlement account</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-fg">Settlement type</label>
                 <select
-                  className="w-full h-10 rounded-md bg-subtle px-3 text-sm text-fg outline-none focus:ring-2 focus:ring-brand/40 transition-all appearance-none"
+                  className="h-10 w-full appearance-none rounded-md bg-subtle px-3 text-sm text-fg outline-none transition-all focus:ring-2 focus:ring-brand/40"
                   {...register('settlementType')}
                 >
                   <option value="">Select type</option>
@@ -674,7 +782,8 @@ function RestaurantEditor({
             {restaurant.paystackSubaccountCode && (
               <div className="flex items-center gap-2 text-xs text-muted">
                 <Check size={12} className="text-success" />
-                Subaccount code: <code className="font-mono">{restaurant.paystackSubaccountCode}</code>
+                Subaccount code:{' '}
+                <code className="font-mono">{restaurant.paystackSubaccountCode}</code>
               </div>
             )}
           </div>
@@ -706,11 +815,19 @@ function RestaurantEditor({
 
 function HeroCard({ restaurant }: { restaurant: Restaurant }) {
   return (
-    <div className="bg-surface rounded-2xl overflow-hidden">
+    <div className="overflow-hidden rounded-2xl bg-surface">
       {/* Cover image */}
       <div
-        className="h-28 w-full bg-subtle relative"
-        style={restaurant.coverUrl ? { backgroundImage: `url(${restaurant.coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+        className="relative h-28 w-full bg-subtle"
+        style={
+          restaurant.coverUrl
+            ? {
+                backgroundImage: `url(${restaurant.coverUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : {}
+        }
       >
         {!restaurant.coverUrl && (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -721,55 +838,83 @@ function HeroCard({ restaurant }: { restaurant: Restaurant }) {
 
       {/* Logo + info */}
       <div className="px-5 pb-5">
-        <div className="flex items-end gap-4 -mt-8 mb-4">
-          <div className="h-16 w-16 rounded-xl bg-bg border-2 border-surface flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
-            {restaurant.logoUrl
-              ? <img src={restaurant.logoUrl} alt={restaurant.name} className="h-full w-full object-contain" />
-              : <Store size={20} className="text-muted" />}
+        <div className="-mt-8 mb-4 flex items-end gap-4">
+          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-surface bg-bg shadow-sm">
+            {restaurant.logoUrl ? (
+              <img
+                src={restaurant.logoUrl}
+                alt={restaurant.name}
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <Store size={20} className="text-muted" />
+            )}
           </div>
-          <div className="flex-1 min-w-0 pb-1">
-            <h2 className="text-base font-semibold text-fg truncate">{restaurant.name}</h2>
+          <div className="min-w-0 flex-1 pb-1">
+            <h2 className="truncate text-base font-semibold text-fg">{restaurant.name}</h2>
             <p className="text-xs text-muted">/menu/{restaurant.slug}</p>
           </div>
-          <Badge variant={planBadge[restaurant.plan] ?? 'muted'}>
-            {restaurant.plan}
-          </Badge>
+          <Badge variant={planBadge[restaurant.plan] ?? 'muted'}>{restaurant.plan}</Badge>
         </div>
 
         {/* Quick stats row */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Branches',   value: restaurant._count?.branches ?? 0 },
+            { label: 'Branches', value: restaurant._count?.branches ?? 0 },
             { label: 'Menu items', value: restaurant._count?.menuItems ?? 0 },
-            { label: 'Status',     value: restaurant.subStatus },
+            { label: 'Status', value: restaurant.subStatus },
           ].map(({ label, value }) => (
-            <div key={label} className="bg-subtle rounded-lg px-3 py-2">
+            <div key={label} className="rounded-lg bg-subtle px-3 py-2">
               <p className="text-2xs text-muted">{label}</p>
-              <p className="text-sm font-semibold text-fg capitalize">{value}</p>
+              <p className="text-sm font-semibold capitalize text-fg">{value}</p>
             </div>
           ))}
         </div>
 
         {/* Social links row */}
-        {(restaurant.instagramHandle || restaurant.twitterHandle || restaurant.facebookHandle || restaurant.tiktokHandle || restaurant.website) && (
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
+        {(restaurant.instagramHandle ||
+          restaurant.twitterHandle ||
+          restaurant.facebookHandle ||
+          restaurant.tiktokHandle ||
+          restaurant.website) && (
+          <div className="mt-3 flex items-center gap-3 border-t border-border pt-3">
             {restaurant.website && (
-              <a href={restaurant.website} target="_blank" rel="noopener" className="text-muted hover:text-fg transition-colors">
+              <a
+                href={restaurant.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted transition-colors hover:text-fg"
+              >
                 <Globe size={15} />
               </a>
             )}
             {restaurant.instagramHandle && (
-              <a href={`https://instagram.com/${restaurant.instagramHandle}`} target="_blank" rel="noopener" className="text-muted hover:text-fg transition-colors">
+              <a
+                href={`https://instagram.com/${restaurant.instagramHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted transition-colors hover:text-fg"
+              >
                 <Instagram size={15} />
               </a>
             )}
             {restaurant.twitterHandle && (
-              <a href={`https://x.com/${restaurant.twitterHandle}`} target="_blank" rel="noopener" className="text-muted hover:text-fg transition-colors">
+              <a
+                href={`https://x.com/${restaurant.twitterHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted transition-colors hover:text-fg"
+              >
                 <Twitter size={15} />
               </a>
             )}
             {restaurant.facebookHandle && (
-              <a href={`https://facebook.com/${restaurant.facebookHandle}`} target="_blank" rel="noopener" className="text-muted hover:text-fg transition-colors">
+              <a
+                href={`https://facebook.com/${restaurant.facebookHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted transition-colors hover:text-fg"
+              >
                 <Facebook size={15} />
               </a>
             )}
@@ -784,18 +929,29 @@ function HeroCard({ restaurant }: { restaurant: Restaurant }) {
 
 function SubscriptionPanel({ restaurant }: { restaurant: Restaurant }) {
   const features: Record<string, string[]> = {
-    starter:  ['1 branch', 'Digital menu + QR', 'Up to 60 items'],
-    pro:      ['Up to 3 branches', 'Online ordering + Paystack', 'Live orders', 'Analytics'],
-    business: ['Unlimited branches', 'Staff permissions', 'Cross-branch analytics', 'Custom domain'],
+    starter: ['1 branch', 'Digital menu + QR', 'Up to 60 items'],
+    pro: ['Up to 3 branches', 'Online ordering + Paystack', 'Live orders', 'Analytics'],
+    business: [
+      'Unlimited branches',
+      'Staff permissions',
+      'Cross-branch analytics',
+      'Custom domain',
+    ],
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-fg capitalize">{restaurant.plan} plan</p>
-          <p className="text-xs text-muted mt-0.5">
-            Status: <span className={cn('font-medium', restaurant.subStatus === 'active' ? 'text-success' : 'text-danger')}>
+          <p className="text-sm font-semibold capitalize text-fg">{restaurant.plan} plan</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Status:{' '}
+            <span
+              className={cn(
+                'font-medium',
+                restaurant.subStatus === 'active' ? 'text-success' : 'text-danger',
+              )}
+            >
               {restaurant.subStatus}
             </span>
             {restaurant.subExpiresAt && (
@@ -804,14 +960,16 @@ function SubscriptionPanel({ restaurant }: { restaurant: Restaurant }) {
           </p>
         </div>
         {restaurant.plan !== 'business' && (
-          <Button variant="secondary" size="sm">Upgrade plan</Button>
+          <Button variant="secondary" size="sm">
+            Upgrade plan
+          </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {(features[restaurant.plan] ?? []).map((f) => (
           <div key={f} className="flex items-center gap-1.5 text-xs text-muted">
-            <Check size={11} className="text-success flex-shrink-0" strokeWidth={3} />
+            <Check size={11} className="flex-shrink-0 text-success" strokeWidth={3} />
             {f}
           </div>
         ))}
@@ -824,20 +982,25 @@ function SubscriptionPanel({ restaurant }: { restaurant: Restaurant }) {
 
 function StickyBar({ saving, onDiscard }: { saving: boolean; onDiscard: () => void }) {
   return (
-    <div className="sticky top-14 z-20 flex items-center justify-between gap-4 px-4 py-2.5 bg-fg text-bg rounded-xl">
+    <div className="sticky top-14 z-20 flex items-center justify-between gap-4 rounded-xl bg-fg px-4 py-2.5 text-bg">
       <div className="flex items-center gap-2 text-sm">
-        <AlertCircle size={14} className="text-warning flex-shrink-0" />
+        <AlertCircle size={14} className="flex-shrink-0 text-warning" />
         Unsaved changes
       </div>
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onDiscard}
-          className="text-xs text-bg/60 hover:text-bg transition-colors"
+          className="text-xs text-bg/60 transition-colors hover:text-bg"
         >
           Discard
         </button>
-        <Button type="submit" size="sm" loading={saving} className="bg-white text-fg hover:bg-white/90 h-7 px-3 text-xs">
+        <Button
+          type="submit"
+          size="sm"
+          loading={saving}
+          className="h-7 bg-white px-3 text-xs text-fg hover:bg-white/90"
+        >
           Save
         </Button>
       </div>
@@ -848,7 +1011,11 @@ function StickyBar({ saving, onDiscard }: { saving: boolean; onDiscard: () => vo
 // ─── Collapsible section ──────────────────────────────────────────────────────
 
 function Section({
-  id, title, icon: Icon, expanded, onToggle, children,
+  title,
+  icon: Icon,
+  expanded,
+  onToggle,
+  children,
 }: {
   id: string;
   title: string;
@@ -862,39 +1029,38 @@ function Section({
   useEffect(() => {
     if (!bodyRef.current) return;
     if (expanded) {
-      gsap.fromTo(bodyRef.current,
+      gsap.fromTo(
+        bodyRef.current,
         { height: 0, opacity: 0 },
         { height: 'auto', opacity: 1, duration: 0.3, ease: 'power3.out' },
       );
     } else {
-      gsap.to(bodyRef.current,
-        { height: 0, opacity: 0, duration: 0.2, ease: 'power3.in' },
-      );
+      gsap.to(bodyRef.current, { height: 0, opacity: 0, duration: 0.2, ease: 'power3.in' });
     }
   }, [expanded]);
 
   return (
-    <div className="bg-surface rounded-xl overflow-hidden">
+    <div className="overflow-hidden rounded-xl bg-surface">
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center justify-between w-full px-5 py-4 text-left hover:bg-subtle/40 transition-colors"
+        className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-subtle/40"
       >
         <div className="flex items-center gap-3">
-          <span className="h-7 w-7 rounded-lg bg-brand/10 flex items-center justify-center flex-shrink-0">
+          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand/10">
             <Icon size={14} className="text-brand" />
           </span>
           <span className="text-sm font-medium text-fg">{title}</span>
         </div>
-        {expanded
-          ? <ChevronUp size={16} className="text-muted" />
-          : <ChevronDown size={16} className="text-muted" />}
+        {expanded ? (
+          <ChevronUp size={16} className="text-muted" />
+        ) : (
+          <ChevronDown size={16} className="text-muted" />
+        )}
       </button>
 
       <div ref={bodyRef} style={{ height: expanded ? 'auto' : 0, overflow: 'hidden' }}>
-        <div className="px-5 pb-5 pt-1">
-          {children}
-        </div>
+        <div className="px-5 pb-5 pt-1">{children}</div>
       </div>
     </div>
   );
@@ -915,16 +1081,16 @@ const FieldInput = React.forwardRef<HTMLInputElement, FieldProps>(
       {label && <label className="block text-sm font-medium text-fg">{label}</label>}
       <div className="relative">
         {startIcon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
             {startIcon}
           </span>
         )}
         <input
           ref={ref}
           className={cn(
-            'w-full h-10 rounded-md bg-subtle px-3 text-sm text-fg placeholder:text-muted',
-            'outline-none focus:ring-2 focus:ring-brand/40 focus:bg-surface transition-all',
-            'disabled:opacity-40 disabled:cursor-not-allowed',
+            'h-10 w-full rounded-md bg-subtle px-3 text-sm text-fg placeholder:text-muted',
+            'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40',
+            'disabled:cursor-not-allowed disabled:opacity-40',
             startIcon && 'pl-9',
             error && 'ring-2 ring-danger/50',
             className,
@@ -953,7 +1119,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={copy}
-      className="text-muted hover:text-fg transition-colors"
+      className="text-muted transition-colors hover:text-fg"
       title="Copy URL"
     >
       {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
