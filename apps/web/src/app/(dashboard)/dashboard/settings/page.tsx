@@ -1,9 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Crown, CreditCard, User as UserIcon, Building2, Check, 
-  ChevronRight, ShieldCheck, Zap, Gem, Lock
+import {
+  Crown,
+  CreditCard,
+  User as UserIcon,
+  Building2,
+  Check,
+  Zap,
+  Gem,
+  Lock,
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/stores/store';
 import { updateRestaurant } from '@/stores/restaurantSlice';
@@ -20,16 +26,28 @@ import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 
 const PLAN_FEATURES: Record<string, { desc: string; icon: any; features: string[] }> = {
-  starter: { desc: 'Perfect for single locations', icon: Zap, features: ['1 branch', 'Basic menu', 'QR ordering'] },
-  pro: { desc: 'For growing restaurant groups', icon: Crown, features: ['Up to 3 branches', 'Analytics', 'Staff management', 'Priority support'] },
-  business: { desc: 'Unlimited scale & enterprise features', icon: Gem, features: ['Unlimited branches', 'Advanced analytics', 'API access', 'Dedicated support'] },
+  starter: {
+    desc: 'Perfect for single locations',
+    icon: Zap,
+    features: ['1 branch', 'Basic menu', 'QR ordering'],
+  },
+  pro: {
+    desc: 'For growing restaurant groups',
+    icon: Crown,
+    features: ['Up to 3 branches', 'Analytics', 'Staff management', 'Priority support'],
+  },
+  business: {
+    desc: 'Unlimited scale & enterprise features',
+    icon: Gem,
+    features: ['Unlimited branches', 'Advanced analytics', 'API access', 'Dedicated support'],
+  },
 };
 
 const TABS = [
   { id: 'profile', label: 'Personal Profile', icon: UserIcon },
   { id: 'organization', label: 'Organization', icon: Building2 },
   { id: 'billing', label: 'Billing & Payments', icon: CreditCard },
-  { id: 'security', label: 'Security', icon: Lock }
+  { id: 'security', label: 'Security', icon: Lock },
 ];
 
 export default function SettingsPage() {
@@ -45,7 +63,13 @@ export default function SettingsPage() {
 
   // Org Form
   const [orgData, setOrgData] = useState({
-    name: '', description: '', phone: '', email: '', address: '', city: '', currency: ''
+    name: '',
+    description: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    currency: '',
   });
 
   // Security Form
@@ -53,7 +77,11 @@ export default function SettingsPage() {
 
   // Billing Form
   const [billingData, setBillingData] = useState({
-    paystackPublicKey: '', paystackSecretKey: '', settlementType: 'bank', settlementBank: '', settlementAccountNumber: ''
+    paystackPublicKey: '',
+    paystackSecretKey: '',
+    settlementType: 'bank',
+    settlementBank: '',
+    settlementAccountNumber: '',
   });
 
   const containerRef = React.useRef(null);
@@ -86,9 +114,18 @@ export default function SettingsPage() {
     }
   }, [restaurant]);
 
-  useGSAP(() => {
-    gsap.from('.settings-reveal', { opacity: 0, y: 10, stagger: 0.05, duration: 0.4, ease: 'power3.out' });
-  }, { scope: containerRef, dependencies: [activeTab] });
+  useGSAP(
+    () => {
+      gsap.from('.settings-reveal', {
+        opacity: 0,
+        y: 10,
+        stagger: 0.05,
+        duration: 0.4,
+        ease: 'power3.out',
+      });
+    },
+    { scope: containerRef, dependencies: [activeTab] },
+  );
 
   const handleUpdateProfile = async () => {
     setLoading(true);
@@ -155,23 +192,32 @@ export default function SettingsPage() {
     }
   };
 
-  if (!restaurant) return <div className="text-center py-20 text-muted-foreground font-medium">Select a restaurant first.</div>;
+  if (!restaurant)
+    return (
+      <div className="text-muted-foreground py-20 text-center font-medium">
+        Select a restaurant first.
+      </div>
+    );
 
   return (
     <div ref={containerRef} className="max-w-5xl space-y-8 pb-20">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Account Settings</h1>
-        <p className="text-muted-foreground mt-1 font-medium">Manage your profile, organization, billing, and security.</p>
+        <p className="text-muted-foreground mt-1 font-medium">
+          Manage your profile, organization, billing, and security.
+        </p>
       </div>
 
-      <div className="flex gap-2 p-1 bg-muted/30 rounded-xl w-max">
+      <div className="flex w-max gap-2 rounded-xl bg-muted/30 p-1">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
-              activeTab === t.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all',
+              activeTab === t.id
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             <t.icon size={16} />
@@ -182,7 +228,7 @@ export default function SettingsPage() {
 
       <div className="settings-reveal min-h-[500px]">
         {activeTab === 'profile' && (
-          <Card className="border-border shadow-sm max-w-2xl">
+          <Card className="max-w-2xl border-border shadow-sm">
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Update your personal details here.</CardDescription>
@@ -190,8 +236,15 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <Input label="Full Name" value={profileName} onValueChange={setProfileName} />
               <Input label="Phone Number" value={profilePhone} onValueChange={setProfilePhone} />
-              <Input label="Email Address" value={user?.email || ''} readOnly className="bg-muted/30 opacity-60" />
-              <Button onClick={handleUpdateProfile} loading={loading} className="mt-4">Save Profile</Button>
+              <Input
+                label="Email Address"
+                value={user?.email || ''}
+                readOnly
+                className="bg-muted/30 opacity-60"
+              />
+              <Button onClick={handleUpdateProfile} loading={loading} className="mt-4">
+                Save Profile
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -203,18 +256,48 @@ export default function SettingsPage() {
               <CardDescription>Configure how your restaurant appears to customers.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Input label="Restaurant Name" value={orgData.name} onValueChange={(v) => setOrgData({ ...orgData, name: v })} />
-                <Input label="Currency (e.g., GHS, USD)" value={orgData.currency} onValueChange={(v) => setOrgData({ ...orgData, currency: v })} />
-                <Input label="Contact Phone" value={orgData.phone} onValueChange={(v) => setOrgData({ ...orgData, phone: v })} />
-                <Input label="Contact Email" value={orgData.email} onValueChange={(v) => setOrgData({ ...orgData, email: v })} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Restaurant Name"
+                  value={orgData.name}
+                  onValueChange={(v) => setOrgData({ ...orgData, name: v })}
+                />
+                <Input
+                  label="Currency (e.g., GHS, USD)"
+                  value={orgData.currency}
+                  onValueChange={(v) => setOrgData({ ...orgData, currency: v })}
+                />
+                <Input
+                  label="Contact Phone"
+                  value={orgData.phone}
+                  onValueChange={(v) => setOrgData({ ...orgData, phone: v })}
+                />
+                <Input
+                  label="Contact Email"
+                  value={orgData.email}
+                  onValueChange={(v) => setOrgData({ ...orgData, email: v })}
+                />
               </div>
-              <Input label="Description" value={orgData.description} onValueChange={(v) => setOrgData({ ...orgData, description: v })} />
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Input label="Address" value={orgData.address} onValueChange={(v) => setOrgData({ ...orgData, address: v })} />
-                <Input label="City" value={orgData.city} onValueChange={(v) => setOrgData({ ...orgData, city: v })} />
+              <Input
+                label="Description"
+                value={orgData.description}
+                onValueChange={(v) => setOrgData({ ...orgData, description: v })}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Address"
+                  value={orgData.address}
+                  onValueChange={(v) => setOrgData({ ...orgData, address: v })}
+                />
+                <Input
+                  label="City"
+                  value={orgData.city}
+                  onValueChange={(v) => setOrgData({ ...orgData, city: v })}
+                />
               </div>
-              <Button onClick={handleUpdateOrg} loading={loading}>Save Organization</Button>
+              <Button onClick={handleUpdateOrg} loading={loading}>
+                Save Organization
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -222,12 +305,17 @@ export default function SettingsPage() {
         {activeTab === 'billing' && (
           <div className="space-y-8">
             <Card className="border-border shadow-sm">
-              <CardHeader className="flex flex-row justify-between items-center">
+              <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Subscription Plan</CardTitle>
                   <CardDescription>Your current plan and upgrade options.</CardDescription>
                 </div>
-                <Badge variant={restaurant.subStatus === 'active' ? 'success' : 'warning'} className="capitalize">{restaurant.subStatus}</Badge>
+                <Badge
+                  variant={restaurant.subStatus === 'active' ? 'success' : 'warning'}
+                  className="capitalize"
+                >
+                  {restaurant.subStatus}
+                </Badge>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 sm:grid-cols-3">
@@ -236,20 +324,61 @@ export default function SettingsPage() {
                     const cfg = PLAN_FEATURES[plan];
                     const Icon = cfg.icon;
                     return (
-                      <div key={plan} className={cn("relative flex flex-col p-5 rounded-2xl border transition-all", isCurrent ? "bg-primary/5 border-primary" : "bg-muted/20 border-border")}>
-                        {isCurrent && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-primary rounded-full text-[9px] font-black text-primary-foreground shadow-sm">CURRENT</div>}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className={cn("p-1.5 rounded-lg border", isCurrent ? "bg-background text-primary border-primary/20" : "bg-background border-border")}><Icon size={16} /></div>
-                          <p className={cn("text-sm font-black capitalize", isCurrent ? "text-primary" : "text-foreground")}>{plan}</p>
+                      <div
+                        key={plan}
+                        className={cn(
+                          'relative flex flex-col rounded-2xl border p-5 transition-all',
+                          isCurrent ? 'bg-primary/5 border-primary' : 'border-border bg-muted/20',
+                        )}
+                      >
+                        {isCurrent && (
+                          <div className="bg-primary text-primary-foreground absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 text-[9px] font-black shadow-sm">
+                            CURRENT
+                          </div>
+                        )}
+                        <div className="mb-4 flex items-center justify-between">
+                          <div
+                            className={cn(
+                              'rounded-lg border p-1.5',
+                              isCurrent
+                                ? 'text-primary border-primary/20 bg-background'
+                                : 'border-border bg-background',
+                            )}
+                          >
+                            <Icon size={16} />
+                          </div>
+                          <p
+                            className={cn(
+                              'text-sm font-black capitalize',
+                              isCurrent ? 'text-primary' : 'text-foreground',
+                            )}
+                          >
+                            {plan}
+                          </p>
                         </div>
-                        <p className="text-[10px] text-muted-foreground font-medium mb-4 h-8">{cfg.desc}</p>
-                        <ul className="space-y-2 mb-6 flex-1">
+                        <p className="text-muted-foreground mb-4 h-8 text-[10px] font-medium">
+                          {cfg.desc}
+                        </p>
+                        <ul className="mb-6 flex-1 space-y-2">
                           {cfg.features.map((f) => (
-                            <li key={f} className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground"><Check size={10} className="text-primary" /><span>{f}</span></li>
+                            <li
+                              key={f}
+                              className="text-muted-foreground flex items-center gap-2 text-[10px] font-bold"
+                            >
+                              <Check size={10} className="text-primary" />
+                              <span>{f}</span>
+                            </li>
                           ))}
                         </ul>
                         {!isCurrent && plan !== 'starter' && (
-                          <Button variant="outline" className="w-full text-[10px] h-8" onClick={() => handleUpgrade(plan)} loading={loading}>Adopt {plan}</Button>
+                          <Button
+                            variant="outline"
+                            className="h-8 w-full text-[10px]"
+                            onClick={() => handleUpgrade(plan)}
+                            loading={loading}
+                          >
+                            Adopt {plan}
+                          </Button>
                         )}
                       </div>
                     );
@@ -258,35 +387,75 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-border shadow-sm max-w-3xl">
+            <Card className="max-w-3xl border-border shadow-sm">
               <CardHeader>
                 <CardTitle>Payment & Settlement</CardTitle>
-                <CardDescription>Configure Paystack integrations and payout details.</CardDescription>
+                <CardDescription>
+                  Configure Paystack integrations and payout details.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <Input label="Paystack Public Key" value={billingData.paystackPublicKey} onValueChange={(v) => setBillingData({ ...billingData, paystackPublicKey: v })} />
-                  <Input label="Paystack Secret Key" value={billingData.paystackSecretKey} onValueChange={(v) => setBillingData({ ...billingData, paystackSecretKey: v })} type="password" />
-                  <Input label="Settlement Type (e.g., bank, momo)" value={billingData.settlementType} onValueChange={(v) => setBillingData({ ...billingData, settlementType: v })} />
-                  <Input label="Settlement Bank / Provider" value={billingData.settlementBank} onValueChange={(v) => setBillingData({ ...billingData, settlementBank: v })} />
-                  <Input label="Account Number" value={billingData.settlementAccountNumber} onValueChange={(v) => setBillingData({ ...billingData, settlementAccountNumber: v })} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input
+                    label="Paystack Public Key"
+                    value={billingData.paystackPublicKey}
+                    onValueChange={(v) => setBillingData({ ...billingData, paystackPublicKey: v })}
+                  />
+                  <Input
+                    label="Paystack Secret Key"
+                    value={billingData.paystackSecretKey}
+                    onValueChange={(v) => setBillingData({ ...billingData, paystackSecretKey: v })}
+                    type="password"
+                  />
+                  <Input
+                    label="Settlement Type (e.g., bank, momo)"
+                    value={billingData.settlementType}
+                    onValueChange={(v) => setBillingData({ ...billingData, settlementType: v })}
+                  />
+                  <Input
+                    label="Settlement Bank / Provider"
+                    value={billingData.settlementBank}
+                    onValueChange={(v) => setBillingData({ ...billingData, settlementBank: v })}
+                  />
+                  <Input
+                    label="Account Number"
+                    value={billingData.settlementAccountNumber}
+                    onValueChange={(v) =>
+                      setBillingData({ ...billingData, settlementAccountNumber: v })
+                    }
+                  />
                 </div>
-                <Button onClick={handleUpdateBilling} loading={loading}>Save Payment Settings</Button>
+                <Button onClick={handleUpdateBilling} loading={loading}>
+                  Save Payment Settings
+                </Button>
               </CardContent>
             </Card>
           </div>
         )}
 
         {activeTab === 'security' && (
-          <Card className="border-border shadow-sm max-w-2xl">
+          <Card className="max-w-2xl border-border shadow-sm">
             <CardHeader>
               <CardTitle>Security</CardTitle>
               <CardDescription>Change your password.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Input label="Current Password" type="password" value={passData.oldPassword} onValueChange={(v) => setPassData({ ...passData, oldPassword: v })} placeholder="Leave blank if you use Google Auth" />
-              <Input label="New Password" type="password" value={passData.newPassword} onValueChange={(v) => setPassData({ ...passData, newPassword: v })} />
-              <Button onClick={handleChangePassword} loading={loading} className="mt-4">Update Password</Button>
+              <Input
+                label="Current Password"
+                type="password"
+                value={passData.oldPassword}
+                onValueChange={(v) => setPassData({ ...passData, oldPassword: v })}
+                placeholder="Leave blank if you use Google Auth"
+              />
+              <Input
+                label="New Password"
+                type="password"
+                value={passData.newPassword}
+                onValueChange={(v) => setPassData({ ...passData, newPassword: v })}
+              />
+              <Button onClick={handleChangePassword} loading={loading} className="mt-4">
+                Update Password
+              </Button>
             </CardContent>
           </Card>
         )}

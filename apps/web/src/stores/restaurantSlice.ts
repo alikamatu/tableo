@@ -32,6 +32,7 @@ export interface Restaurant {
   openingHours: Record<string, { open: string; close: string; closed: boolean }> | null;
   // Paystack
   paystackPublicKey: string | null;
+  paystackSecretKey: string | null;
   // Settlement
   settlementType: string | null;
   settlementBank: string | null;
@@ -51,7 +52,21 @@ export interface Restaurant {
   _count?: { branches: number; menuItems: number };
 }
 
-export type RestaurantUpdatePayload = Partial<Omit<Restaurant, 'id' | 'ownerId' | 'createdAt' | 'updatedAt' | 'plan' | 'subStatus' | 'subExpiresAt' | 'onboardComplete' | '_count' | 'branches'>> & {
+export type RestaurantUpdatePayload = Partial<
+  Omit<
+    Restaurant,
+    | 'id'
+    | 'ownerId'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'plan'
+    | 'subStatus'
+    | 'subExpiresAt'
+    | 'onboardComplete'
+    | '_count'
+    | 'branches'
+  >
+> & {
   paystackSecretKey?: string;
 };
 
@@ -99,10 +114,7 @@ export const fetchRestaurant = createAsyncThunk(
 
 export const updateRestaurant = createAsyncThunk(
   'restaurant/update',
-  async (
-    { id, ...payload }: RestaurantUpdatePayload & { id: string },
-    { rejectWithValue },
-  ) => {
+  async ({ id, ...payload }: RestaurantUpdatePayload & { id: string }, { rejectWithValue }) => {
     try {
       const { data } = await api.patch(`/restaurants/${id}`, payload);
       return data.data as Restaurant;
@@ -127,19 +139,24 @@ const restaurantSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchRestaurants.pending,   (s) => { s.loading = true; s.error = null; })
+      .addCase(fetchRestaurants.pending, (s) => {
+        s.loading = true;
+        s.error = null;
+      })
       .addCase(fetchRestaurants.fulfilled, (s, a: PayloadAction<Restaurant[]>) => {
         s.loading = false;
         s.restaurants = a.payload;
         if (!s.current && a.payload.length > 0) s.current = a.payload[0]!;
       })
-      .addCase(fetchRestaurants.rejected,  (s, a) => {
+      .addCase(fetchRestaurants.rejected, (s, a) => {
         s.loading = false;
         s.error = a.payload as NormalizedError;
       });
 
     builder
-      .addCase(fetchRestaurant.pending,   (s) => { s.loading = true; })
+      .addCase(fetchRestaurant.pending, (s) => {
+        s.loading = true;
+      })
       .addCase(fetchRestaurant.fulfilled, (s, a: PayloadAction<Restaurant>) => {
         s.loading = false;
         s.current = a.payload;
@@ -147,17 +164,22 @@ const restaurantSlice = createSlice({
         if (idx >= 0) s.restaurants[idx] = a.payload;
         else s.restaurants.unshift(a.payload);
       })
-      .addCase(fetchRestaurant.rejected,  (s) => { s.loading = false; });
+      .addCase(fetchRestaurant.rejected, (s) => {
+        s.loading = false;
+      });
 
     builder
-      .addCase(updateRestaurant.pending,   (s) => { s.saving = true; s.error = null; })
+      .addCase(updateRestaurant.pending, (s) => {
+        s.saving = true;
+        s.error = null;
+      })
       .addCase(updateRestaurant.fulfilled, (s, a: PayloadAction<Restaurant>) => {
         s.saving = false;
         const idx = s.restaurants.findIndex((r) => r.id === a.payload.id);
         if (idx >= 0) s.restaurants[idx] = a.payload;
         if (s.current?.id === a.payload.id) s.current = a.payload;
       })
-      .addCase(updateRestaurant.rejected,  (s, a) => {
+      .addCase(updateRestaurant.rejected, (s, a) => {
         s.saving = false;
         s.error = a.payload as NormalizedError;
       });

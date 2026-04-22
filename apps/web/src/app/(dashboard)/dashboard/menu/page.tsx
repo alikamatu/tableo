@@ -1,13 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  Plus, 
-  UtensilsCrossed, 
-  FolderPlus, 
-  MoreVertical,
-  Image as ImageIcon
-} from 'lucide-react';
+import { Plus, UtensilsCrossed, FolderPlus, MoreVertical, Image as ImageIcon } from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import api from '@/lib/api';
 import { createCategorySchema, createMenuItemSchema } from '@/lib/validations';
@@ -26,7 +20,13 @@ import {
   ModalTrigger,
 } from '@/components/ui/Modal';
 import { cn } from '@/lib/utils';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import * as React from 'react';
@@ -94,7 +94,7 @@ export default function MenuPage() {
         y: 10,
         stagger: 0.05,
         duration: 0.4,
-        ease: 'power3.out'
+        ease: 'power3.out',
       });
     }
   }, [loading]);
@@ -148,36 +148,55 @@ export default function MenuPage() {
       await api.patch(`/restaurants/${restaurant.id}/items/${item.id}`, {
         isAvailable: !item.isAvailable,
       });
-      setItems(prev => prev.map(i => i.id === item.id ? { ...i, isAvailable: !i.isAvailable } : i));
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, isAvailable: !i.isAvailable } : i)),
+      );
     } catch (err: any) {
       toast.error(err.response?.data?.message ?? 'Failed to update');
     }
   };
 
-  if (!restaurant) return <div className="text-center py-20 text-muted-foreground font-medium">Select a restaurant first.</div>;
+  if (!restaurant)
+    return (
+      <div className="text-muted-foreground py-20 text-center font-medium">
+        Select a restaurant first.
+      </div>
+    );
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Menu Designer</h1>
-          <p className="text-muted-foreground mt-1 font-medium">Craft your restaurant&apos;s digital experience.</p>
+          <p className="text-muted-foreground mt-1 font-medium">
+            Craft your restaurant&apos;s digital experience.
+          </p>
         </div>
-        
+
         <div className="flex gap-3">
           <Modal open={catOpen} onOpenChange={setCatOpen}>
             <ModalTrigger asChild>
-              <Button variant="outline" startContent={<FolderPlus size={18} />}>Category</Button>
+              <Button variant="outline" startContent={<FolderPlus size={18} />}>
+                Category
+              </Button>
             </ModalTrigger>
             <ModalContent>
               <ModalHeader>
                 <ModalTitle>New Category</ModalTitle>
               </ModalHeader>
               <div className="py-4">
-                <Input label="Category Name" value={catName} onValueChange={setCatName} placeholder="e.g. Main Courses" autoFocus />
+                <Input
+                  label="Category Name"
+                  value={catName}
+                  onValueChange={setCatName}
+                  placeholder="e.g. Main Courses"
+                  autoFocus
+                />
               </div>
               <ModalFooter>
-                <Button variant="muted" onClick={() => setCatOpen(false)}>Cancel</Button>
+                <Button variant="muted" onClick={() => setCatOpen(false)}>
+                  Cancel
+                </Button>
                 <Button onClick={handleCreateCategory}>Save</Button>
               </ModalFooter>
             </ModalContent>
@@ -192,29 +211,45 @@ export default function MenuPage() {
                 <ModalTitle>New Item</ModalTitle>
               </ModalHeader>
               <div className="space-y-4 py-4">
-                <Select 
-                  value={itemForm.categoryId} 
-                  onValueChange={(v) => setItemForm(f => ({ ...f, categoryId: v }))}
+                <Select
+                  value={itemForm.categoryId}
+                  onValueChange={(v) => setItemForm((f) => ({ ...f, categoryId: v }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Choose Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <Input label="Item Name" value={itemForm.name} onValueChange={(v) => setItemForm(f => ({ ...f, name: v }))} placeholder="Flame-Grilled Burger" />
-                <Input label="Description" value={itemForm.description} onValueChange={(v) => setItemForm(f => ({ ...f, description: v }))} placeholder="Brief ingredient summary..." />
-                <Input 
-                  label="Price (₵)" 
-                  type="number" 
-                  value={itemForm.basePrice} 
-                  onValueChange={(v) => setItemForm(f => ({ ...f, basePrice: v }))} 
+                <Input
+                  label="Item Name"
+                  value={itemForm.name}
+                  onValueChange={(v) => setItemForm((f) => ({ ...f, name: v }))}
+                  placeholder="Flame-Grilled Burger"
+                />
+                <Input
+                  label="Description"
+                  value={itemForm.description}
+                  onValueChange={(v) => setItemForm((f) => ({ ...f, description: v }))}
+                  placeholder="Brief ingredient summary..."
+                />
+                <Input
+                  label="Price (₵)"
+                  type="number"
+                  value={itemForm.basePrice}
+                  onValueChange={(v) => setItemForm((f) => ({ ...f, basePrice: v }))}
                   placeholder="0.00"
                 />
               </div>
               <ModalFooter>
-                <Button variant="muted" onClick={() => setItemOpen(false)}>Cancel</Button>
+                <Button variant="muted" onClick={() => setItemOpen(false)}>
+                  Cancel
+                </Button>
                 <Button onClick={handleCreateItem}>Add Item</Button>
               </ModalFooter>
             </ModalContent>
@@ -223,14 +258,16 @@ export default function MenuPage() {
       </div>
 
       {categories.length === 0 && !loading ? (
-        <Card className="p-16 text-center menu-cat-reveal border-dashed">
+        <Card className="menu-cat-reveal border-dashed p-16 text-center">
           <CardContent className="flex flex-col items-center gap-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+            <div className="bg-primary/10 text-primary flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm">
               <UtensilsCrossed size={32} />
             </div>
             <div className="space-y-1">
               <p className="text-xl font-bold text-foreground">Menu is empty</p>
-              <p className="text-muted-foreground text-sm max-w-xs mx-auto">Create your first category to start populating your digital menu.</p>
+              <p className="text-muted-foreground mx-auto max-w-xs text-sm">
+                Create your first category to start populating your digital menu.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -243,15 +280,19 @@ export default function MenuPage() {
                 <div className="flex items-center justify-between px-2">
                   <div className="flex items-center gap-3">
                     <h3 className="text-lg font-bold text-foreground">{cat.name}</h3>
-                    <Badge variant="muted" className="h-5 px-1.5">{catItems.length} items</Badge>
+                    <Badge variant="muted" className="h-5 px-1.5">
+                      {catItems.length} items
+                    </Badge>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><MoreVertical size={16} /></Button>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8">
+                    <MoreVertical size={16} />
+                  </Button>
                 </div>
 
-                <Card className="overflow-hidden shadow-sm border-border">
+                <Card className="overflow-hidden border-border shadow-sm">
                   <CardContent className="p-0">
                     {catItems.length === 0 ? (
-                      <div className="p-10 text-center text-muted-foreground text-sm font-medium italic">
+                      <div className="text-muted-foreground p-10 text-center text-sm font-medium italic">
                         No items in this category yet.
                       </div>
                     ) : (
@@ -259,35 +300,43 @@ export default function MenuPage() {
                         {catItems.map((item) => (
                           <div
                             key={item.id}
-                            className="group flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                            className="group flex items-center justify-between p-4 transition-colors hover:bg-muted/50"
                           >
-                            <div className="flex items-center gap-4 min-w-0">
-                              <div className="h-10 w-10 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all overflow-hidden">
+                            <div className="flex min-w-0 items-center gap-4">
+                              <div className="text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted transition-all">
                                 {item.imageUrl ? (
-                                  /* eslint-disable-next-line @next/next/no-img-element */
-                                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                                  <img
+                                    src={item.imageUrl}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
                                 ) : (
                                   <ImageIcon size={18} />
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="font-bold text-foreground truncate group-hover:text-primary transition-colors text-sm">
+                                <p className="group-hover:text-primary truncate text-sm font-bold text-foreground transition-colors">
                                   {item.name}
                                 </p>
                                 {item.description && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 max-w-md truncate font-medium">
+                                  <p className="text-muted-foreground mt-0.5 max-w-md truncate text-xs font-medium">
                                     {item.description}
                                   </p>
                                 )}
                               </div>
                             </div>
-                            
-                            <div className="flex items-center gap-6 shrink-0">
-                              <p className="font-bold text-foreground text-sm">
+
+                            <div className="flex shrink-0 items-center gap-6">
+                              <p className="text-sm font-bold text-foreground">
                                 {formatGHS(parseFloat(item.basePrice))}
                               </p>
                               <div className="flex items-center gap-3">
-                                <span className={cn("text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60 transition-colors", item.isAvailable && "text-green-600/60")}>
+                                <span
+                                  className={cn(
+                                    'text-muted-foreground/60 text-[9px] font-bold uppercase tracking-widest transition-colors',
+                                    item.isAvailable && 'text-green-600/60',
+                                  )}
+                                >
                                   {item.isAvailable ? 'Available' : 'Sold Out'}
                                 </span>
                                 <Switch

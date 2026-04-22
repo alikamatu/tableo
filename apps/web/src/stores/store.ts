@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import type { TypedUseSelectorHook } from 'react-redux';
 import authReducer from './authSlice';
 import restaurantReducer from './restaurantSlice';
 import branchReducer from './branchSlice';

@@ -1,4 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '@/lib/api';
 
 interface Branch {
@@ -59,10 +60,13 @@ export const fetchBranch = createAsyncThunk(
 export const createBranch = createAsyncThunk(
   'branch/create',
   async (
-    { restaurantId, ...payload }: { 
-      restaurantId: string; 
-      name: string; 
-      address?: string; 
+    {
+      restaurantId,
+      ...payload
+    }: {
+      restaurantId: string;
+      name: string;
+      address?: string;
       phone?: string;
       managerName: string;
       managerEmail: string;
@@ -81,11 +85,18 @@ export const createBranch = createAsyncThunk(
 export const updateBranch = createAsyncThunk(
   'branch/update',
   async (
-    { restaurantId, branchId, ...payload }: { restaurantId: string; branchId: string; [key: string]: unknown },
+    {
+      restaurantId,
+      branchId,
+      ...payload
+    }: { restaurantId: string; branchId: string; [key: string]: unknown },
     { rejectWithValue },
   ) => {
     try {
-      const { data } = await api.patch(`/restaurants/${restaurantId}/branches/${branchId}`, payload);
+      const { data } = await api.patch(
+        `/restaurants/${restaurantId}/branches/${branchId}`,
+        payload,
+      );
       return data.data as Branch;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message ?? 'Failed to update branch');

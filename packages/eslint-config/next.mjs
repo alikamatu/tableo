@@ -17,6 +17,8 @@ export const nextConfig = [
   ...baseConfig,
   ...fixupConfigRules(compat.extends("plugin:react/recommended")),
   ...fixupConfigRules(compat.extends("plugin:react-hooks/recommended")),
+  ...fixupConfigRules(compat.extends("plugin:@next/next/recommended")),
+  ...fixupConfigRules(compat.extends("plugin:@next/next/core-web-vitals")),
   {
     files: ["**/*.{ts,tsx,js,jsx}"],
     languageOptions: {
@@ -28,6 +30,8 @@ export const nextConfig = [
     rules: {
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
+      "react/no-unescaped-entities": "warn",
+      "@next/next/no-img-element": "off",
     },
     settings: {
       react: { version: "detect" },

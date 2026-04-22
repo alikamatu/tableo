@@ -6,7 +6,11 @@ import { normalizeError, type NormalizedError } from '@/lib/api-error';
 
 export type OnboardStep = 'welcome' | 'restaurant_info' | 'location_hours' | 'payment' | 'done';
 
-export interface HoursEntry { open: string; close: string; closed: boolean }
+export interface HoursEntry {
+  open: string;
+  close: string;
+  closed: boolean;
+}
 export type OpeningHours = Record<string, HoursEntry>;
 
 export interface OnboardingDraft {
@@ -54,11 +58,23 @@ const DEFAULT_HOURS: OpeningHours = {
 };
 
 const EMPTY_DRAFT: OnboardingDraft = {
-  name: '', slug: '', description: '', logoUrl: '', coverUrl: '', cuisine: [],
-  phone: '', email: '', address: '', city: '', country: 'Ghana',
+  name: '',
+  slug: '',
+  description: '',
+  logoUrl: '',
+  coverUrl: '',
+  cuisine: [],
+  phone: '',
+  email: '',
+  address: '',
+  city: '',
+  country: 'Ghana',
   openingHours: DEFAULT_HOURS,
-  paystackPublicKey: '', paystackSecretKey: '',
-  settlementType: 'momo', settlementBank: '', settlementAccountNumber: '',
+  paystackPublicKey: '',
+  paystackSecretKey: '',
+  settlementType: 'momo',
+  settlementBank: '',
+  settlementAccountNumber: '',
 };
 
 const STORAGE_KEY = 'tableo_onboard_draft';
@@ -67,7 +83,11 @@ const STORAGE_KEY = 'tableo_onboard_draft';
 
 function saveDraft(draft: OnboardingDraft) {
   if (typeof window === 'undefined') return;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); } catch {}
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+  } catch {
+    /* ignore */
+  }
 }
 
 function loadDraft(): OnboardingDraft {
@@ -76,12 +96,18 @@ function loadDraft(): OnboardingDraft {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return EMPTY_DRAFT;
     return { ...EMPTY_DRAFT, ...JSON.parse(raw) };
-  } catch { return EMPTY_DRAFT; }
+  } catch {
+    return EMPTY_DRAFT;
+  }
 }
 
 function clearDraft() {
   if (typeof window === 'undefined') return;
-  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 const initialState: OnboardingState = {
@@ -102,7 +128,11 @@ export const loadOnboardingState = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const { data } = await api.get('/onboarding/state');
-      return data.data as { step: OnboardStep; complete: boolean; restaurant: Record<string, unknown> | null };
+      return data.data as {
+        step: OnboardStep;
+        complete: boolean;
+        restaurant: Record<string, unknown> | null;
+      };
     } catch (err) {
       return rejectWithValue(normalizeError(err));
     }
@@ -112,13 +142,14 @@ export const loadOnboardingState = createAsyncThunk(
 /** Save a step to the API and advance */
 export const saveOnboardingStep = createAsyncThunk(
   'onboarding/saveStep',
-  async (
-    payload: Partial<OnboardingDraft> & { step: OnboardStep },
-    { rejectWithValue },
-  ) => {
+  async (payload: Partial<OnboardingDraft> & { step: OnboardStep }, { rejectWithValue }) => {
     try {
       const { data } = await api.patch('/onboarding/step', payload);
-      return data.data as { step: OnboardStep; complete: boolean; restaurant: Record<string, unknown> };
+      return data.data as {
+        step: OnboardStep;
+        complete: boolean;
+        restaurant: Record<string, unknown>;
+      };
     } catch (err) {
       return rejectWithValue(normalizeError(err));
     }
@@ -159,43 +190,51 @@ const onboardingSlice = createSlice({
   extraReducers: (builder) => {
     // loadState
     builder
-      .addCase(loadOnboardingState.pending, (s) => { s.loading = true; })
+      .addCase(loadOnboardingState.pending, (s) => {
+        s.loading = true;
+      })
       .addCase(loadOnboardingState.fulfilled, (s, a) => {
         s.loading = false;
         s.step = a.payload.complete ? 'done' : a.payload.step;
         s.complete = a.payload.complete;
         if (a.payload.restaurant) {
           const r = a.payload.restaurant;
-          s.restaurantId = r['id'] as string ?? null;
+          s.restaurantId = (r['id'] as string) ?? null;
           // Merge API data into draft (API is source of truth, localStorage fills gaps)
           const local = loadDraft();
           s.draft = {
             ...local,
-            name:               (r['name'] as string) || local.name,
-            slug:               (r['slug'] as string) || local.slug,
-            description:        (r['description'] as string) || local.description,
-            logoUrl:            (r['logoUrl'] as string) || local.logoUrl,
-            coverUrl:           (r['coverUrl'] as string) || local.coverUrl,
-            cuisine:            (r['cuisine'] as string[]) || local.cuisine,
-            phone:              (r['phone'] as string) || local.phone,
-            email:              (r['email'] as string) || local.email,
-            address:            (r['address'] as string) || local.address,
-            city:               (r['city'] as string) || local.city,
-            country:            (r['country'] as string) || local.country,
-            openingHours:       (r['openingHours'] as OpeningHours) || local.openingHours,
-            paystackPublicKey:  (r['paystackPublicKey'] as string) || local.paystackPublicKey,
-            paystackSecretKey:  '',                               // never echo secrets
-            settlementType:     (r['settlementType'] as 'bank' | 'momo') || local.settlementType,
-            settlementBank:     (r['settlementBank'] as string) || local.settlementBank,
-            settlementAccountNumber: (r['settlementAccountNumber'] as string) || local.settlementAccountNumber,
+            name: (r['name'] as string) || local.name,
+            slug: (r['slug'] as string) || local.slug,
+            description: (r['description'] as string) || local.description,
+            logoUrl: (r['logoUrl'] as string) || local.logoUrl,
+            coverUrl: (r['coverUrl'] as string) || local.coverUrl,
+            cuisine: (r['cuisine'] as string[]) || local.cuisine,
+            phone: (r['phone'] as string) || local.phone,
+            email: (r['email'] as string) || local.email,
+            address: (r['address'] as string) || local.address,
+            city: (r['city'] as string) || local.city,
+            country: (r['country'] as string) || local.country,
+            openingHours: (r['openingHours'] as OpeningHours) || local.openingHours,
+            paystackPublicKey: (r['paystackPublicKey'] as string) || local.paystackPublicKey,
+            paystackSecretKey: '', // never echo secrets
+            settlementType: (r['settlementType'] as 'bank' | 'momo') || local.settlementType,
+            settlementBank: (r['settlementBank'] as string) || local.settlementBank,
+            settlementAccountNumber:
+              (r['settlementAccountNumber'] as string) || local.settlementAccountNumber,
           };
         }
       })
-      .addCase(loadOnboardingState.rejected, (s) => { s.loading = false; });
+      .addCase(loadOnboardingState.rejected, (s) => {
+        s.loading = false;
+      });
 
     // saveStep
     builder
-      .addCase(saveOnboardingStep.pending, (s) => { s.saving = true; s.error = null; })
+      .addCase(saveOnboardingStep.pending, (s) => {
+        s.saving = true;
+        s.error = null;
+      })
       .addCase(saveOnboardingStep.fulfilled, (s, a) => {
         s.saving = false;
         s.step = a.payload.step;
