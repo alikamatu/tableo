@@ -107,7 +107,7 @@ export default function BranchesPage() {
 
   const handleManageBranch = (branch: any) => {
     dispatch(setCurrentBranch(branch));
-    router.push('/dashboard/dashboard/orders');
+    router.push('/dashboard/orders');
     toast.success(`Managing ${branch.name}`);
   };
 
@@ -159,7 +159,7 @@ export default function BranchesPage() {
 
         <Button
           startContent={<Plus size={18} />}
-          onClick={() => router.push('/dashboard/dashboard/branches/new')}
+          onClick={() => router.push('/dashboard/branches/new')}
           className="shadow-primary/20 shadow-md"
         >
           New Branch
@@ -217,10 +217,7 @@ export default function BranchesPage() {
               </p>
             </div>
             {!(search || statusFilter !== 'all') && (
-              <Button
-                onClick={() => router.push('/dashboard/dashboard/branches/new')}
-                variant="secondary"
-              >
+              <Button onClick={() => router.push('/dashboard/branches/new')} variant="secondary">
                 Add First Location
               </Button>
             )}
@@ -255,9 +252,7 @@ export default function BranchesPage() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem
-                      onClick={() => router.push(`/dashboard/dashboard/branches/${b.id}`)}
-                    >
+                    <DropdownMenuItem onClick={() => router.push(`/dashboard/branches/${b.id}`)}>
                       <Edit2 size={14} className="mr-2" /> Edit Branch
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -317,7 +312,7 @@ export default function BranchesPage() {
                     <Button
                       variant="outline"
                       className="hover:bg-primary/5 hover:border-primary/20 h-10 flex-1 gap-2 border-border text-xs font-bold"
-                      onClick={() => router.push(`/dashboard/dashboard/branches/${b.id}`)}
+                      onClick={() => router.push(`/dashboard/branches/${b.id}`)}
                     >
                       <Edit2 size={16} /> Edit
                     </Button>

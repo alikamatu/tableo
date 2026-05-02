@@ -39,40 +39,37 @@ const initialState: AuthState = {
 
 // ─── Thunks ───────────────────────────────────────────────────────────────────
 
-export const initAuth = createAsyncThunk(
-  'auth/init',
-  async (_, { rejectWithValue }) => {
-    // If no marker, we definitely don't have a session
-    if (!hasSessionMarker()) return null;
+export const initAuth = createAsyncThunk('auth/init', async (_, { rejectWithValue }) => {
+  // If no marker, we definitely don't have a session
+  if (!hasSessionMarker()) return null;
 
-    try {
-      const existingToken = tokenStore.get();
-      
-      // 1. If we have a token, try to fetch the user immediately
-      if (existingToken) {
-        try {
-          const { data } = await api.get('/auth/me');
-          return data.data as AuthUser;
-        } catch (err) {
-          // Token might be expired, proceed to refresh
-          console.warn('Existing token invalid, attempting refresh');
-        }
+  try {
+    const existingToken = tokenStore.get();
+
+    // 1. If we have a token, try to fetch the user immediately
+    if (existingToken) {
+      try {
+        const { data } = await api.get('/auth/me');
+        return data.data as AuthUser;
+      } catch (err) {
+        // Token might be expired, proceed to refresh
+        console.warn('Existing token invalid, attempting refresh');
       }
-
-      // 2. Refresh the token
-      const { data: r } = await api.post('/auth/refresh', null, { withCredentials: true });
-      tokenStore.set(r.data.accessToken);
-      
-      // 3. Fetch the user with the new token
-      const { data: m } = await api.get('/auth/me');
-      return m.data as AuthUser;
-    } catch (err) {
-      // Both existing token and refresh failed → wipe session
-      clearSession();
-      return rejectWithValue(normalizeError(err));
     }
-  },
-);
+
+    // 2. Refresh the token
+    const { data: r } = await api.post('/auth/refresh', null, { withCredentials: true });
+    tokenStore.set(r.data.accessToken);
+
+    // 3. Fetch the user with the new token
+    const { data: m } = await api.get('/auth/me');
+    return m.data as AuthUser;
+  } catch (err) {
+    // Both existing token and refresh failed → wipe session
+    clearSession();
+    return rejectWithValue(normalizeError(err));
+  }
+});
 
 export const login = createAsyncThunk(
   'auth/login',
@@ -124,6 +121,17 @@ export const logoutThunk = createAsyncThunk('auth/logout', async () => {
   }
 });
 
+export const refreshSession = createAsyncThunk('auth/refresh', async (_, { rejectWithValue }) => {
+  try {
+    const { data: r } = await api.post('/auth/refresh', null, { withCredentials: true });
+    tokenStore.set(r.data.accessToken);
+    const { data: m } = await api.get('/auth/me');
+    return m.data as AuthUser;
+  } catch (err) {
+    return rejectWithValue(normalizeError(err));
+  }
+});
+
 export const resendVerification = createAsyncThunk(
   'auth/resendVerification',
   async (_, { rejectWithValue }) => {
@@ -161,57 +169,80 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     // initAuth
     builder
-      .addCase(initAuth.pending,    (s) => { s.initializing = true; })
-      .addCase(initAuth.fulfilled,  (s, a: PayloadAction<AuthUser | null>) => {
+      .addCase(initAuth.pending, (s) => {
+        s.initializing = true;
+      })
+      .addCase(initAuth.fulfilled, (s, a: PayloadAction<AuthUser | null>) => {
         s.initializing = false;
         s.user = a.payload;
       })
-      .addCase(initAuth.rejected,   (s) => {
+      .addCase(initAuth.rejected, (s) => {
         s.initializing = false;
         s.user = null;
       });
 
     // login
     builder
-      .addCase(login.pending,   (s) => { s.loading = true; s.error = null; })
+      .addCase(login.pending, (s) => {
+        s.loading = true;
+        s.error = null;
+      })
       .addCase(login.fulfilled, (s, a: PayloadAction<AuthUser>) => {
         s.loading = false;
         s.user = a.payload;
         s.initializing = false;
       })
-      .addCase(login.rejected,  (s, a) => {
+      .addCase(login.rejected, (s, a) => {
         s.loading = false;
         s.error = a.payload as NormalizedError;
       });
 
     // register
     builder
-      .addCase(register.pending,   (s) => { s.loading = true; s.error = null; })
+      .addCase(register.pending, (s) => {
+        s.loading = true;
+        s.error = null;
+      })
       .addCase(register.fulfilled, (s, a: PayloadAction<AuthUser>) => {
         s.loading = false;
         s.user = a.payload;
         s.initializing = false;
       })
-      .addCase(register.rejected,  (s, a) => {
+      .addCase(register.rejected, (s, a) => {
         s.loading = false;
         s.error = a.payload as NormalizedError;
       });
 
     // logout — always clears user regardless of API success/failure
     builder
-      .addCase(logoutThunk.pending,   (s) => { s.loading = true; })
+      .addCase(logoutThunk.pending, (s) => {
+        s.loading = true;
+      })
       .addCase(logoutThunk.fulfilled, (s) => {
         s.user = null;
         s.error = null;
         s.loading = false;
         s.initializing = false;
       })
-      .addCase(logoutThunk.rejected,  (s) => {
+      .addCase(logoutThunk.rejected, (s) => {
         // Shouldn't fire (we catch in thunk), but guard anyway
         s.user = null;
         s.error = null;
         s.loading = false;
         s.initializing = false;
+      });
+    // refreshSession
+    builder
+      .addCase(refreshSession.pending, (s) => {
+        s.loading = true;
+      })
+      .addCase(refreshSession.fulfilled, (s, a: PayloadAction<AuthUser>) => {
+        s.loading = false;
+        s.user = a.payload;
+      })
+      .addCase(refreshSession.rejected, (s, a) => {
+        s.loading = false;
+        s.error = a.payload as NormalizedError;
       });
   },
 });

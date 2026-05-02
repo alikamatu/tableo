@@ -6,14 +6,15 @@ import { Sidebar } from '@/components/shared/Sidebar';
 import { Topbar } from '@/components/shared/Topbar';
 import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { VerificationBanner } from '@/components/shared/VerificationBanner';
+import { useRestaurant } from '@/hooks/use-restaurant';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useRestaurant(); // Initialize restaurant fetching globally for the dashboard
 
   return (
     <ProtectedRoute>
       <div className="flex h-screen overflow-hidden bg-bg">
-
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div
@@ -34,15 +35,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Right pane */}
-        <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           {/* Email verification banner — shows only when email unverified */}
           <VerificationBanner />
           <Topbar onToggleSidebar={() => setSidebarOpen((o) => !o)} />
-          <main className="flex-1 overflow-y-auto px-5 py-6 lg:px-8 lg:py-7">
-            {children}
-          </main>
+          <main className="flex-1 overflow-y-auto px-5 py-6 lg:px-8 lg:py-7">{children}</main>
         </div>
-
       </div>
     </ProtectedRoute>
   );

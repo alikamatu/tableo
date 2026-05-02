@@ -1,4 +1,4 @@
-import { IsEnum, IsUUID } from 'class-validator';
+import { IsIn, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Plan, type PlanType } from '@tableo/types';
 
@@ -7,7 +7,7 @@ export class InitSubscriptionDto {
   @IsUUID()
   restaurantId!: string;
 
-  @ApiProperty({ enum: Plan, example: Plan.PRO })
-  @IsEnum(Plan)
+  @ApiProperty({ enum: ['starter', 'pro', 'business'], example: 'pro' })
+  @IsIn(['starter', 'pro', 'business'])
   plan!: PlanType;
 }

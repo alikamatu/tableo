@@ -47,10 +47,11 @@ export function yesterdayString(): string {
 // ─── Currency ─────────────────────────────────────────────────────────────────
 
 export function formatGHS(amount: number): string {
+  const value = Number.isFinite(amount) ? amount : 0;
   return new Intl.NumberFormat('en-GH', {
     style: 'currency',
     currency: 'GHS',
-  }).format(amount);
+  }).format(value);
 }
 
 // ─── Plan rank ────────────────────────────────────────────────────────────────

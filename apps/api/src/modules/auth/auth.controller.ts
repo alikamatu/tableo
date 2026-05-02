@@ -1,19 +1,16 @@
-import {
-  Body, Controller, Get, Post, Query,
-  Request, Res, UseGuards, Patch
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Request, Res, UseGuards, Patch } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Response as ExpressResponse } from 'express';
 import type { User } from '@prisma/client';
 
-import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import type { AuthService } from './auth.service';
+import type { RegisterDto } from './dto/register.dto';
+import type { ForgotPasswordDto } from './dto/forgot-password.dto';
+import type { ResetPasswordDto } from './dto/reset-password.dto';
+import type { ChangePasswordDto } from './dto/change-password.dto';
+import type { UpdateProfileDto } from './dto/update-profile.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '@tableo/types';
@@ -63,10 +60,7 @@ export class AuthController {
   @Public()
   @UseGuards(ThrottlerGuard)
   @Post('register')
-  async register(
-    @Body() dto: RegisterDto,
-    @Res({ passthrough: false }) res: ExpressResponse,
-  ) {
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: false }) res: ExpressResponse) {
     const { refreshToken, user, accessToken } = await this.auth.register(dto);
     setAuthCookies(res, refreshToken, user.onboardComplete);
     res.status(201).json({ data: { user, accessToken } });
@@ -103,8 +97,8 @@ export class AuthController {
     @CurrentUser() user: JwtPayload,
     @Res({ passthrough: false }) res: ExpressResponse,
   ) {
-    const { refreshToken, accessToken } = await this.auth.refresh(user.sub);
-    setAuthCookies(res, refreshToken, user.onboardComplete ?? false);
+    const { refreshToken, accessToken, onboardComplete } = await this.auth.refresh(user.sub);
+    setAuthCookies(res, refreshToken, onboardComplete);
     res.status(200).json({ data: { accessToken } });
   }
 
@@ -134,7 +128,7 @@ export class AuthController {
   ) {
     const user = await this.auth.validateGoogleUser(req.user);
     const { refreshToken, user: userData } = await this.auth.login(user.id);
-    
+
     setAuthCookies(res, refreshToken, userData.onboardComplete ?? false);
 
     // Redirect to frontend dashboard or onboarding
@@ -143,7 +137,7 @@ export class AuthController {
       : userData.staffMember
         ? `${process.env['APP_URL']}/manager-dashboard`
         : `${process.env['APP_URL']}/dashboard`;
-    
+
     // Add success flag so frontend knows to set session marker
     redirectUrl += redirectUrl.includes('?') ? '&authenticated=true' : '?authenticated=true';
 

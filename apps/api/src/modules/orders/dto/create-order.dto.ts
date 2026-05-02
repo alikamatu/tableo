@@ -11,7 +11,12 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { PaymentMethod, type PaymentMethodType } from '@tableo/types';
+import {
+  PaymentMethod,
+  OrderType,
+  type PaymentMethodType,
+  type OrderTypeType,
+} from '@tableo/types';
 
 export class CreateOrderItemDto {
   @ApiProperty({ example: 'uuid-of-menu-item' })
@@ -41,6 +46,11 @@ export class CreateOrderDto {
   @MaxLength(20)
   tableNumber?: string;
 
+  @ApiProperty({ enum: OrderType, default: OrderType.DINE_IN })
+  @IsEnum(OrderType)
+  @IsOptional()
+  type?: OrderTypeType;
+
   @ApiProperty({ example: 'Kofi Mensah', required: false })
   @IsOptional()
   @IsString()
@@ -50,6 +60,12 @@ export class CreateOrderDto {
   @ApiProperty({ enum: PaymentMethod, default: PaymentMethod.COUNTER })
   @IsEnum(PaymentMethod)
   paymentMethod!: PaymentMethodType;
+
+  @ApiProperty({ required: false, example: 'PSK_REF_123456' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  paystackRef?: string;
 
   @ApiProperty({ type: [CreateOrderItemDto] })
   @IsArray()

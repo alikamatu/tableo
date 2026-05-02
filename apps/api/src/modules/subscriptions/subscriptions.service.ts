@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import {
   Injectable,
   NotFoundException,
@@ -5,16 +6,15 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../config/prisma.service';
+import type { ConfigService } from '@nestjs/config';
+import type { PrismaService } from '../../config/prisma.service';
 import type { InitSubscriptionDto } from './dto/init-subscription.dto';
 
-// Paystack plan codes — map Tableo plan names to Paystack plan codes
-const PAYSTACK_PLAN_CODES: Record<string, string> = {
-  starter: '', // Free tier — no Paystack plan
-  pro: 'PLN_pro_placeholder', // TODO: replace with real Paystack plan code
-  business: 'PLN_business_placeholder', // TODO: replace with real Paystack plan code
-};
+const INVALID_PAYSTACK_PLAN_CODES = new Set([
+  '',
+  'PLN_YOUR_REAL_PRO_CODE',
+  'PLN_YOUR_REAL_BUSINESS_CODE',
+]);
 
 @Injectable()
 export class SubscriptionsService {
@@ -43,8 +43,31 @@ export class SubscriptionsService {
       throw new BadRequestException('Starter plan is free — no subscription needed');
     }
 
-    const planCode = PAYSTACK_PLAN_CODES[dto.plan];
-    if (!planCode) throw new BadRequestException('Invalid plan');
+    const planCodes: Record<string, string> = {
+      starter: '',
+      pro: this.config.get<string>('PAYSTACK_PLAN_CODE_PRO', 'PLN_YOUR_REAL_PRO_CODE'),
+      business: this.config.get<string>(
+        'PAYSTACK_PLAN_CODE_BUSINESS',
+        'PLN_YOUR_REAL_BUSINESS_CODE',
+      ),
+    };
+
+    const planCode = planCodes[dto.plan];
+    const isUnconfiguredPlanCode =
+      !planCode ||
+      INVALID_PAYSTACK_PLAN_CODES.has(planCode) ||
+      /your_real|placeholder/i.test(planCode);
+
+    if (isUnconfiguredPlanCode) {
+      throw new BadRequestException(
+        `Plan code for '${dto.plan}' is not configured yet. Please use the Free Trial or set PAYSTACK_PLAN_CODE_PRO / PAYSTACK_PLAN_CODE_BUSINESS in your environment.`,
+      );
+    }
+
+    const PLAN_AMOUNTS: Record<string, number> = {
+      pro: 10000, // 100.00 GHS
+      business: 30000, // 300.00 GHS
+    };
 
     // Initialize Paystack transaction
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -55,15 +78,15 @@ export class SubscriptionsService {
       },
       body: JSON.stringify({
         email: restaurant.owner.email,
+        amount: PLAN_AMOUNTS[dto.plan],
         plan: planCode,
         metadata: {
           restaurantId: restaurant.id,
           plan: dto.plan,
         },
-        callback_url: this.config.get<string>(
-          'CORS_ORIGINS',
-          'http://localhost:3000',
-        ) + '/settings?tab=billing',
+        callback_url:
+          this.config.get<string>('CORS_ORIGINS', 'http://localhost:3000') +
+          '/dashboard/settings?tab=billing',
       }),
     });
 
@@ -71,7 +94,7 @@ export class SubscriptionsService {
 
     if (!result.status) {
       this.logger.error('Paystack init failed', result);
-      throw new BadRequestException('Failed to initialize payment');
+      throw new BadRequestException(result.message || 'Failed to initialize payment');
     }
 
     return {
@@ -79,6 +102,29 @@ export class SubscriptionsService {
       accessCode: result.data.access_code,
       reference: result.data.reference,
     };
+  }
+
+  /**
+   * Verify a Paystack transaction manually (useful when webhooks are blocked in local dev).
+   */
+  async verifyTransaction(reference: string) {
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: {
+        Authorization: `Bearer ${this.paystackSecret}`,
+      },
+    });
+
+    const result = (await response.json()) as any;
+    if (!result.status) throw new BadRequestException('Transaction verification failed');
+
+    const data = result.data;
+    if (data.status === 'success') {
+      // Manually trigger the webhook logic for charge.success
+      await this.handleWebhook('charge.success', data);
+      return { success: true, message: 'Payment verified and plan updated' };
+    }
+
+    return { success: false, message: 'Payment not successful yet' };
   }
 
   /**
@@ -233,10 +279,10 @@ export class SubscriptionsService {
       },
     });
 
-    return { 
+    return {
       message: `30-day trial for ${plan} plan started successfully`,
       plan,
-      expiresAt 
+      expiresAt,
     };
   }
 
@@ -244,12 +290,8 @@ export class SubscriptionsService {
    * Verify Paystack webhook signature (HMAC SHA-512).
    */
   verifyWebhookSignature(body: string, signature: string): boolean {
-    const crypto = require('crypto');
     const webhookSecret = this.config.get<string>('PAYSTACK_WEBHOOK_SECRET', '');
-    const hash = crypto
-      .createHmac('sha512', webhookSecret)
-      .update(body)
-      .digest('hex');
+    const hash = crypto.createHmac('sha512', webhookSecret).update(body).digest('hex');
     return hash === signature;
   }
 }

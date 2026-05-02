@@ -1,11 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { MenuService } from './menu.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { CreateMenuItemDto } from './dto/create-menu-item.dto';
-import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
-import { UpsertOverrideDto } from './dto/upsert-override.dto';
+import type { MenuService } from './menu.service';
+import type { CreateCategoryDto } from './dto/create-category.dto';
+import type { UpdateCategoryDto } from './dto/update-category.dto';
+import type { CreateMenuItemDto } from './dto/create-menu-item.dto';
+import type { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import type { UpsertOverrideDto } from './dto/upsert-override.dto';
 import { BranchAccessGuard } from '../../common/guards/branch-access.guard';
+import { RestaurantAccessGuard } from '../../common/guards/restaurant-access.guard';
 
 @ApiTags('Menu')
 @ApiBearerAuth()
@@ -16,51 +18,61 @@ export class MenuController {
   // ─── Categories ─────────────────────────────────────────────────────────────
 
   @Post('categories')
-  createCategory(
-    @Param('restaurantId') restaurantId: string,
-    @Body() dto: CreateCategoryDto,
-  ) {
-    return this.svc.createCategory(restaurantId, dto);
+  @UseGuards(RestaurantAccessGuard)
+  createCategory(@Param('restaurantId') rId: string, @Body() dto: CreateCategoryDto) {
+    return this.svc.createCategory(rId, dto);
   }
 
   @Get('categories')
-  findCategories(@Param('restaurantId') restaurantId: string) {
-    return this.svc.findCategories(restaurantId);
+  findCategories(@Param('restaurantId') rId: string) {
+    return this.svc.findCategories(rId);
+  }
+
+  @Get('categories/:categoryId')
+  findCategory(@Param('categoryId') id: string) {
+    return this.svc.findCategory(id);
   }
 
   @Patch('categories/:categoryId')
-  updateCategory(
-    @Param('categoryId') categoryId: string,
-    @Body() dto: Partial<CreateCategoryDto>,
-  ) {
-    return this.svc.updateCategory(categoryId, dto);
+  @UseGuards(RestaurantAccessGuard)
+  updateCategory(@Param('categoryId') id: string, @Body() dto: UpdateCategoryDto) {
+    return this.svc.updateCategory(id, dto);
   }
 
   @Delete('categories/:categoryId')
-  deleteCategory(@Param('categoryId') categoryId: string) {
-    return this.svc.deleteCategory(categoryId);
+  @UseGuards(RestaurantAccessGuard)
+  deleteCategory(@Param('categoryId') id: string) {
+    return this.svc.deleteCategory(id);
   }
 
   // ─── Items ───────────────────────────────────────────────────────────────────
 
   @Post('items')
-  createItem(@Param('restaurantId') restaurantId: string, @Body() dto: CreateMenuItemDto) {
-    return this.svc.createItem(restaurantId, dto);
+  @UseGuards(RestaurantAccessGuard)
+  createItem(@Param('restaurantId') rId: string, @Body() dto: CreateMenuItemDto) {
+    return this.svc.createItem(rId, dto);
   }
 
   @Get('items')
-  findItems(@Param('restaurantId') restaurantId: string) {
-    return this.svc.findItems(restaurantId);
+  findItems(@Param('restaurantId') rId: string) {
+    return this.svc.findItems(rId);
+  }
+
+  @Get('items/featured')
+  findFeaturedItems(@Param('restaurantId') rId: string) {
+    return this.svc.findFeaturedItems(rId);
   }
 
   @Patch('items/:itemId')
-  updateItem(@Param('itemId') itemId: string, @Body() dto: UpdateMenuItemDto) {
-    return this.svc.updateItem(itemId, dto);
+  @UseGuards(RestaurantAccessGuard)
+  updateItem(@Param('itemId') id: string, @Body() dto: UpdateMenuItemDto) {
+    return this.svc.updateItem(id, dto);
   }
 
   @Delete('items/:itemId')
-  deleteItem(@Param('itemId') itemId: string) {
-    return this.svc.deleteItem(itemId);
+  @UseGuards(RestaurantAccessGuard)
+  deleteItem(@Param('itemId') id: string) {
+    return this.svc.deleteItem(id);
   }
 
   // ─── Branch overrides ────────────────────────────────────────────────────────
@@ -68,19 +80,16 @@ export class MenuController {
   @Post('branches/:branchId/overrides/:menuItemId')
   @UseGuards(BranchAccessGuard)
   upsertOverride(
-    @Param('branchId') branchId: string,
-    @Param('menuItemId') menuItemId: string,
+    @Param('branchId') bId: string,
+    @Param('menuItemId') mId: string,
     @Body() dto: UpsertOverrideDto,
   ) {
-    return this.svc.upsertOverride(branchId, menuItemId, dto);
+    return this.svc.upsertOverride(bId, mId, dto);
   }
 
   @Delete('branches/:branchId/overrides/:menuItemId')
   @UseGuards(BranchAccessGuard)
-  deleteOverride(
-    @Param('branchId') branchId: string,
-    @Param('menuItemId') menuItemId: string,
-  ) {
-    return this.svc.deleteOverride(branchId, menuItemId);
+  deleteOverride(@Param('branchId') bId: string, @Param('menuItemId') mId: string) {
+    return this.svc.deleteOverride(bId, mId);
   }
 }

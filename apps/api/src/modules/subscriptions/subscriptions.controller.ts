@@ -1,3 +1,4 @@
+import type { RawBodyRequest } from '@nestjs/common';
 import {
   Body,
   Controller,
@@ -5,14 +6,13 @@ import {
   Param,
   Post,
   Headers,
-  RawBodyRequest,
   Req,
   ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { SubscriptionsService } from './subscriptions.service';
-import { InitSubscriptionDto } from './dto/init-subscription.dto';
+import type { SubscriptionsService } from './subscriptions.service';
+import type { InitSubscriptionDto } from './dto/init-subscription.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '@tableo/types';
@@ -48,10 +48,14 @@ export class SubscriptionsController {
   }
 
   @ApiBearerAuth()
+  @Post('subscriptions/verify/:reference')
+  verifyTransaction(@Param('reference') reference: string) {
+    return this.svc.verifyTransaction(reference);
+  }
+
+  @ApiBearerAuth()
   @Get('restaurants/:restaurantId/subscription')
-  getCurrentPlan(
-    @Param('restaurantId') restaurantId: string,
-  ) {
+  getCurrentPlan(@Param('restaurantId') restaurantId: string) {
     return this.svc.getCurrentPlan(restaurantId);
   }
 
@@ -67,10 +71,7 @@ export class SubscriptionsController {
 
   @ApiBearerAuth()
   @Post('restaurants/:restaurantId/subscription/cancel')
-  cancel(
-    @CurrentUser() user: JwtPayload,
-    @Param('restaurantId') restaurantId: string,
-  ) {
+  cancel(@CurrentUser() user: JwtPayload, @Param('restaurantId') restaurantId: string) {
     return this.svc.cancelSubscription(restaurantId, user.sub);
   }
 }

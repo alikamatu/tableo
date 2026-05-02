@@ -1,175 +1,182 @@
 'use client';
 
-import { 
-  ShoppingCart, 
-  Users, 
-  TrendingUp, 
-  Clock, 
-  ArrowUpRight, 
-  ArrowDownRight,
+import {
+  ShoppingCart,
+  Users,
+  Clock,
   ChevronRight,
-  Plus
+  UtensilsCrossed,
+  GitBranch,
+  Banknote,
+  Rocket,
 } from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import { useRef } from 'react';
 import Link from 'next/link';
+import { formatGHS } from '@tableo/utils';
 
 export default function ManagerDashboardPage() {
   const { user } = useAppSelector((s) => s.auth);
   const { current: branch } = useAppSelector((s) => s.branch);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    gsap.from('.stat-card', {
-      y: 20,
-      opacity: 0,
-      duration: 0.5,
-      stagger: 0.1,
-      ease: 'power2.out',
-    });
-  }, { scope: containerRef });
 
   const stats = [
-    { label: "Today's Orders", value: "42", icon: ShoppingCart, trend: "+12%", trendUp: true },
-    { label: "Today's Revenue", value: "GHS 1,240", icon: TrendingUp, trend: "+8%", trendUp: true },
-    { label: "Active Staff", value: "5", icon: Users, trend: "Stable", trendUp: null },
-    { label: "Avg. Prep Time", value: "18m", icon: Clock, trend: "-2m", trendUp: true },
+    { label: "Today's Orders", value: '0', icon: ShoppingCart },
+    { label: 'Cash Collected', value: formatGHS(0), icon: Banknote },
+    { label: 'Active Staff', value: '0', icon: Users },
+    { label: 'Avg Prep Time', value: '0m', icon: Clock },
   ];
 
   return (
-    <div ref={containerRef} className="space-y-8">
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="space-y-8">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-fg">
             Welcome back, {user?.fullName?.split(' ')[0]}
           </h1>
-          <p className="text-muted text-sm font-medium">
-            Here's what's happening at <span className="text-fg font-bold">{branch?.name ?? 'your branch'}</span> today.
+          <p className="text-sm font-medium text-muted">
+            Manage operations for{' '}
+            <span className="font-bold text-fg">{branch?.name ?? 'your branch'}</span>.
           </p>
         </div>
         <div className="flex gap-3">
           <Link href="/manager-dashboard/orders">
             <Button size="sm" variant="outline" className="h-9 font-bold">
-              View Orders
+              Orders queue
             </Button>
           </Link>
-          <Link href="/manager-dashboard/orders/new">
-            <Button size="sm" className="h-9 font-bold gap-1.5">
-              <Plus size={16} strokeWidth={2.5} />
-              New Order
+          <Link href="/manager-dashboard/menu">
+            <Button size="sm" className="h-9 gap-1.5 font-bold">
+              <UtensilsCrossed size={16} />
+              Branch menu
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* ── Stats Grid ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="stat-card border-none bg-surface/50 shadow-sm hover:shadow-md transition-all group">
+          <Card key={i} className="group border-none bg-surface/50 shadow-sm transition-all">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="h-10 w-10 rounded-xl bg-brand/5 text-brand flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/5 text-brand transition-transform group-hover:scale-110">
                   <stat.icon size={20} strokeWidth={2.5} />
                 </div>
-                {stat.trendUp !== null && (
-                  <Badge variant="secondary" className={cn(
-                    "font-bold text-[10px] h-5",
-                    stat.trendUp ? "text-success bg-success/5" : "text-danger bg-danger/5"
-                  )}>
-                    {stat.trendUp ? <ArrowUpRight size={10} className="mr-0.5" /> : <ArrowDownRight size={10} className="mr-0.5" />}
-                    {stat.trend}
-                  </Badge>
-                )}
               </div>
-              <p className="text-xs font-bold text-muted uppercase tracking-wider mb-0.5">{stat.label}</p>
+              <p className="mb-0.5 text-xs font-bold uppercase tracking-wider text-muted">
+                {stat.label}
+              </p>
               <h3 className="text-xl font-black text-fg">{stat.value}</h3>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* ── Main Content Area ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Recent Orders */}
-        <Card className="lg:col-span-2 border-none bg-surface/30">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="border-none bg-surface/30 lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between py-5">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted">Recent Orders</CardTitle>
-            <Button variant="ghost" size="sm" className="h-7 text-xs font-bold hover:bg-subtle gap-1">
-              View All <ChevronRight size={14} />
-            </Button>
+            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted">
+              Branch Controls
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="h-12 w-12 rounded-full bg-subtle flex items-center justify-center mb-3">
-                <ShoppingCart className="text-muted" size={20} />
-              </div>
-              <p className="text-sm font-bold text-fg">No orders yet</p>
-              <p className="text-xs text-muted">Orders will appear here once customers start ordering.</p>
-            </div>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/manager-dashboard/orders"
+              className="rounded-xl border border-border bg-bg p-4 transition hover:bg-subtle"
+            >
+              <p className="text-sm font-bold text-fg">Orders management</p>
+              <p className="mt-1 text-xs text-muted">
+                Track order progress and handle customer queue.
+              </p>
+            </Link>
+            <Link
+              href="/manager-dashboard/orders"
+              className="rounded-xl border border-border bg-bg p-4 transition hover:bg-subtle"
+            >
+              <p className="text-sm font-bold text-fg">Cash payment control</p>
+              <p className="mt-1 text-xs text-muted">
+                Mark counter payments paid/unpaid from order cards.
+              </p>
+            </Link>
+            <Link
+              href="/manager-dashboard/menu"
+              className="rounded-xl border border-border bg-bg p-4 transition hover:bg-subtle"
+            >
+              <p className="text-sm font-bold text-fg">Menu management</p>
+              <p className="mt-1 text-xs text-muted">
+                Enable/disable items per branch and apply overrides.
+              </p>
+            </Link>
+            <Link
+              href="/manager-dashboard/settings"
+              className="rounded-xl border border-border bg-bg p-4 transition hover:bg-subtle"
+            >
+              <p className="text-sm font-bold text-fg">Branch setup</p>
+              <p className="mt-1 text-xs text-muted">
+                Update branch profile, status, and operating info.
+              </p>
+            </Link>
           </CardContent>
         </Card>
 
-        {/* Branch Info / Actions */}
         <div className="space-y-6">
-          <Card className="border-none bg-brand/5 border-l-4 border-brand">
+          <Card className="border-l-4 border-none border-brand bg-brand/5">
             <CardContent className="p-5">
-              <h4 className="text-sm font-black text-brand uppercase tracking-wider mb-2">Manager Quick Actions</h4>
-              <div className="space-y-2">
-                <Button variant="ghost" className="w-full justify-start h-9 text-xs font-bold hover:bg-brand/10 text-brand gap-2">
-                  <div className="h-2 w-2 rounded-full bg-brand" />
-                  Toggle Branch Status
-                </Button>
-                <Button variant="ghost" className="w-full justify-start h-9 text-xs font-bold hover:bg-brand/10 text-brand gap-2">
-                  <div className="h-2 w-2 rounded-full bg-brand" />
-                  Print QR Codes
-                </Button>
-                <Button variant="ghost" className="w-full justify-start h-9 text-xs font-bold hover:bg-brand/10 text-brand gap-2">
-                  <div className="h-2 w-2 rounded-full bg-brand" />
-                  Manage Staff
-                </Button>
+              <h4 className="mb-2 text-sm font-black uppercase tracking-wider text-brand">
+                Current Branch
+              </h4>
+              <div className="flex items-center gap-2 text-xs font-bold text-fg">
+                <GitBranch size={14} />
+                {branch?.name ?? 'Branch not selected'}
               </div>
+              <p className="mt-2 text-xs text-muted">
+                Managers are scoped to one branch to keep operations focused.
+              </p>
             </CardContent>
           </Card>
 
           <Card className="border-none bg-surface/30">
             <CardHeader className="py-5">
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-muted">System Status</CardTitle>
+              <CardTitle className="text-sm font-black uppercase tracking-widest text-muted">
+                Staff Module
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted font-medium">Printer Connection</span>
-                <Badge variant="outline" className="text-success border-success/20 bg-success/5 font-bold">Online</Badge>
+            <CardContent>
+              <Badge variant="warning" className="mb-2">
+                Launching July
+              </Badge>
+              <p className="text-xs text-muted">
+                Staff invites, roles, and shift controls are planned for July release.
+              </p>
+              <Link href="/manager-dashboard/staff">
+                <Button variant="outline" className="mt-4 h-9 w-full text-xs font-bold">
+                  View roadmap
+                  <ChevronRight size={14} className="ml-1" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none bg-surface/30">
+            <CardHeader className="py-5">
+              <CardTitle className="text-sm font-black uppercase tracking-widest text-muted">
+                Product updates
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs text-muted">
+              <div className="flex items-center gap-2 font-bold text-fg">
+                <Rocket size={14} />
+                Manager tooling expanding monthly
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted font-medium">Menu Availability</span>
-                <span className="font-bold">98% Available</span>
-              </div>
-              <Divider />
-              <p className="text-[10px] text-muted leading-relaxed">
-                Need help? Contact your restaurant administrator or our support team.
+              <p className="mt-2">
+                Next milestone includes staff actions, branch analytics snapshots, and cashier audit
+                logs.
               </p>
             </CardContent>
           </Card>
         </div>
-
       </div>
     </div>
   );
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
-}
-
-function Divider() {
-  return <div className="h-px w-full bg-border/40" />;
 }

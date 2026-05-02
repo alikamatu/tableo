@@ -1,81 +1,58 @@
 'use client';
 
-import { useState, useEffect, use, useRef } from 'react';
-import { 
-  ShoppingCart, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  Send,
-  ChevronRight,
-  Info,
-  Clock,
-  MapPin,
-  X
-} from 'lucide-react';
-import Image from 'next/image';
-import { formatGHS } from '@tableo/utils';
+import { use, useEffect, useMemo, useState, useRef } from 'react';
+import { Info, ShoppingCart, Search, ChevronUp, ChevronRight, X } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
-import { Button } from '@/components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Input } from '@/components/ui/Input';
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalTitle,
-  ModalFooter,
-} from '@/components/ui/Modal';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import * as React from 'react';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Button } from '@/components/ui/Button';
 
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string | null;
-  imageUrl: string | null;
-  price: number;
-  sortOrder: number;
-}
-
-interface MenuCategory {
-  id: string;
-  name: string;
-  sortOrder: number;
-  items: MenuItem[];
-}
+import { MenuHero } from './components/MenuHero';
+import { CategoryBar } from './components/CategoryBar';
+import { MenuSection } from './components/MenuSection';
+import { CartContent, type CartItem } from './components/CartContent';
+import { ItemDetailsModal, RestaurantInfoModal } from './components/Modals';
+import { MenuSkeleton } from './components/MenuSkeleton';
+import { type MenuItem } from './components/MenuItemCard';
+import { type MenuCategory } from './components/MenuSection';
 
 interface MenuData {
-  branch: { 
-    id: string; 
-    name: string; 
-    logoUrl: string | null; 
+  branch: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
     address: string | null;
+    currency?: string;
     paystackPublicKey: string | null;
     paystackSubaccountCode: string | null;
+    restaurant?: { name: string; slug: string; branches?: { name: string; slug: string }[] };
   };
+  recommendations?: MenuItem[];
   categories: MenuCategory[];
-}
-
-interface CartItem {
-  menuItemId: string;
-  name: string;
-  price: number;
-  quantity: number;
-  note?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
-export default function PublicMenuPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+function unwrapData<T>(payload: unknown): T {
+  if (payload && typeof payload === 'object' && 'data' in payload)
+    return (payload as { data: T }).data;
+  return payload as T;
+}
+
+function formatCurrency(amount: number, currency = 'GHS') {
+  return new Intl.NumberFormat('en-GH', { style: 'currency', currency }).format(
+    Number.isFinite(amount) ? amount : 0,
+  );
+}
+
+/** Generate a unique Paystack reference per payment attempt */
+function makeRef() {
+  return `tbl_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export default function PublicMenuPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+
   const [menu, setMenu] = useState<MenuData | null>(null);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -83,91 +60,97 @@ export default function PublicMenuPage({
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [tableNumber, setTableNumber] = useState('');
+  const [orderType, setOrderType] = useState<'dine_in' | 'takeaway'>('dine_in');
+  const [orderConfirmation, setOrderConfirmation] = useState<{
+    id: string;
+    orderNumber: string;
+  } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'counter' | 'online'>('counter');
   const [placing, setPlacing] = useState(false);
-  const containerRef = useRef(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const reduceMotion = useReducedMotion();
+
+  // Keep a fresh reference for each payment attempt
+  const paystackRefRef = useRef<string>(makeRef());
 
   const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
+  const fallbackKey = process.env.NEXT_PUBLIC_PAYSTACK_KEY ?? '';
 
-  // Paystack Config
-  const config = {
-    reference: (new Date()).getTime().toString(),
+  const initializePayment = usePaystackPayment({
+    reference: paystackRefRef.current,
     email: customerEmail || 'customer@tableo.app',
-    amount: cartTotal * 100, // Paystack amount is in kobo/pesewas
-    publicKey: menu?.branch.paystackPublicKey || '',
+    amount: Math.round(cartTotal * 100),
+    publicKey: menu?.branch.paystackPublicKey || fallbackKey,
     subaccount: menu?.branch.paystackSubaccountCode || undefined,
-  };
+    currency: menu?.branch.currency || 'GHS',
+  });
 
-  const initializePayment = usePaystackPayment(config);
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     fetch(`${API_URL}/menu/${slug}`)
       .then((r) => r.json())
-      .then((data) => setMenu(data.data))
+      .then((payload) => {
+        const data = unwrapData<MenuData>(payload);
+        setMenu(data);
+        if (data?.categories?.[0]?.id) setActiveCategory(data.categories[0].id);
+      })
       .catch(() => toast.error('Menu unavailable'))
       .finally(() => setLoading(false));
   }, [slug]);
 
-  useGSAP(() => {
-    if (!loading && menu) {
-      gsap.from('.menu-reveal', {
-        opacity: 0,
-        y: 10,
-        stagger: 0.05,
-        duration: 0.4,
-        ease: 'power3.out'
-      });
-    }
-  }, [loading]);
-
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: MenuItem, note?: string) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.menuItemId === item.id);
-      if (existing) {
+      if (existing)
         return prev.map((c) =>
-          c.menuItemId === item.id ? { ...c, quantity: c.quantity + 1 } : c,
+          c.menuItemId === item.id ? { ...c, quantity: c.quantity + 1, note: note ?? c.note } : c,
         );
-      }
-      return [...prev, { menuItemId: item.id, name: item.name, price: item.price, quantity: 1 }];
+      return [
+        ...prev,
+        { menuItemId: item.id, name: item.name, price: item.price, quantity: 1, note },
+      ];
     });
-    toast.success(`${item.name} added`, { 
-      icon: '🛒', 
-      duration: 1200,
-      style: { background: 'var(--primary)', color: 'var(--primary-foreground)', fontWeight: 'bold' }
-    });
+    toast.success(`${item.name} added`, { icon: '🛒', duration: 1400 });
   };
 
-  const updateQty = (menuItemId: string, delta: number) => {
+  const updateQty = (menuItemId: string, delta: number) =>
     setCart((prev) =>
       prev
-        .map((c) =>
-          c.menuItemId === menuItemId ? { ...c, quantity: c.quantity + delta } : c,
-        )
+        .map((c) => (c.menuItemId === menuItemId ? { ...c, quantity: c.quantity + delta } : c))
         .filter((c) => c.quantity > 0),
     );
-  };
 
-  const placeOrder = async (paystackRef?: string) => {
-    if (!menu || cart.length === 0) return;
-    
-    // Basic validation
-    if (paymentMethod === 'online' && !customerEmail) {
-      toast.error('Email is required for online payments');
-      return;
-    }
-
+  /**
+   * Step 1 — Create the order (always without a reference so it starts as `unpaid`).
+   * Step 2 — If payment was online, immediately call verify-payment with the Paystack reference.
+   *          This marks it `paid` synchronously.
+   */
+  const placeOrder = async (paystackReference?: string) => {
+    if (!menu || !cart.length || placing) return;
     setPlacing(true);
+
     try {
-      const res = await fetch(`${API_URL}/orders`, {
+      // ── Step 1: create order ──────────────────────────────────────────────
+      const createRes = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           branchId: menu.branch.id,
-          tableNumber: tableNumber || undefined,
+          tableNumber: orderType === 'dine_in' ? tableNumber : undefined,
           customerName: customerName || undefined,
           paymentMethod,
-          paystackRef,
+          // Pass the reference so it's stored on the order row
+          paystackRef: paystackReference ?? undefined,
           items: cart.map((c) => ({
             menuItemId: c.menuItemId,
             quantity: c.quantity,
@@ -175,231 +158,347 @@ export default function PublicMenuPage({
           })),
         }),
       });
-      if (!res.ok) throw new Error();
-      toast.success('Order placed! 🎉', { duration: 4000 });
+
+      if (!createRes.ok) {
+        const errBody = await createRes.json().catch(() => ({}));
+        throw new Error((errBody as { message?: string }).message ?? 'Order failed');
+      }
+
+      const created = unwrapData<{
+        id: string;
+        orderNumber?: string;
+        data?: { id: string; orderNumber?: string };
+      }>(await createRes.json());
+      const orderId = (created as { id: string }).id;
+      const orderNumber =
+        (created as { orderNumber?: string }).orderNumber ?? orderId.slice(-6).toUpperCase();
+
+      // ── Step 2: verify payment if online ─────────────────────────────────
+      if (paymentMethod === 'online' && paystackReference) {
+        try {
+          const verifyRes = await fetch(`${API_URL}/orders/${orderId}/verify-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reference: paystackReference }),
+          });
+
+          if (!verifyRes.ok) {
+            // Payment verify failed — order is created but stays `unpaid`
+            // Staff can manually mark it paid from the dashboard
+            console.warn('Payment verification failed — order created as unpaid');
+            toast('Order placed. Payment verification pending.', { icon: '⚠️', duration: 4000 });
+          } else {
+            toast.success('Payment confirmed! Order placed.');
+          }
+        } catch {
+          toast('Order placed. Payment verification pending.', { icon: '⚠️', duration: 4000 });
+        }
+      } else {
+        toast.success('Order placed!');
+      }
+
       setCart([]);
-      setCartOpen(false);
-    } catch {
-      toast.error('Submission failed. Try again.');
+      // Rotate the reference for the next payment
+      paystackRefRef.current = makeRef();
+      setOrderConfirmation({ id: orderId, orderNumber });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Submission failed. Please try again.';
+      toast.error(message);
     } finally {
       setPlacing(false);
     }
   };
 
   const handleCheckout = () => {
+    if (orderType === 'dine_in' && !tableNumber.trim()) {
+      toast.error('Please enter a table number for Dine-in orders.');
+      return;
+    }
+    if (orderType === 'takeaway' && !customerName.trim()) {
+      toast.error('Please enter your name for Takeaway orders.');
+      return;
+    }
+
     if (paymentMethod === 'online') {
-      if (!menu?.branch.paystackPublicKey) {
-        toast.error('Online payment is currently unavailable for this restaurant.');
+      if (!menu?.branch.paystackPublicKey && !fallbackKey) {
+        toast.error('Online payment is unavailable for this restaurant.');
         return;
       }
-      
+      if (!customerEmail.trim()) {
+        toast.error('Your email is required for online payment.');
+        return;
+      }
+      // Generate a fresh reference for this attempt
+      paystackRefRef.current = makeRef();
+
       initializePayment({
-        onSuccess: (response: any) => {
-          placeOrder(response.reference);
+        onSuccess: (response: { reference?: string }) => {
+          void placeOrder(response.reference ?? paystackRefRef.current);
         },
         onClose: () => {
-          toast.error('Payment cancelled');
+          // Rotate ref so a re-open gets a fresh one
+          paystackRefRef.current = makeRef();
+          toast.error('Payment cancelled.');
         },
       });
+      return;
+    }
+
+    void placeOrder();
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      void navigator.share({ title: menu?.branch.name, url: window.location.href });
     } else {
-      placeOrder();
+      void navigator.clipboard.writeText(window.location.href);
+      toast.success('Link copied');
     }
   };
 
-  if (loading) {
+  const categories = useMemo(() => {
+    if (!menu) return [];
+    return menu.categories.flatMap((cat) => [
+      cat,
+      ...((cat as MenuCategory & { subCategories?: MenuCategory[] }).subCategories ?? []),
+    ]);
+  }, [menu]);
+
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim())
+      return categories.filter((cat) => !activeCategory || cat.id === activeCategory);
+    const q = searchQuery.toLowerCase();
+    return categories
+      .map((cat) => ({
+        ...cat,
+        items: cat.items.filter(
+          (i) => i.name.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q),
+        ),
+      }))
+      .filter((cat) => cat.items.length > 0);
+  }, [categories, activeCategory, searchQuery]);
+
+  const recommendations = useMemo(() => {
+    if (!menu) return [];
+    if (menu.recommendations?.length) return menu.recommendations.slice(0, 8);
+    return categories.flatMap((c) => c.items).slice(0, 8);
+  }, [menu, categories]);
+
+  if (loading) return <MenuSkeleton />;
+
+  if (!menu) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary animate-pulse shadow-sm">
-            <ShoppingCart size={24} />
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4 text-center"
+        >
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-danger/10 text-danger">
+            <Info size={40} />
           </div>
-          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">Opening Menu...</p>
-        </div>
+          <h2 className="text-2xl font-bold text-fg">Menu not found</h2>
+          <p className="text-sm text-muted">We couldn't find the menu you're looking for.</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </motion.div>
       </div>
     );
   }
 
-  if (!menu) return (
-    <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
-      <div className="text-center space-y-4">
-        <Info size={40} className="mx-auto text-destructive/50" />
-        <p className="font-bold">Menu not explicitly found.</p>
-      </div>
-    </div>
-  );
+  const cartProps = {
+    cart,
+    cartTotal,
+    paymentMethod,
+    orderType,
+    orderConfirmation,
+    placing,
+    customerName,
+    customerEmail,
+    tableNumber,
+    setCustomerName,
+    setCustomerEmail,
+    setTableNumber,
+    setOrderType,
+    setOrderConfirmation,
+    setPaymentMethod,
+    updateQty,
+    onSubmit: handleCheckout,
+  };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background pb-32 transition-colors">
-      {/* ─── Solid Header ─────────────────────────────────────── */}
-      <header className="relative bg-muted/30 border-b border-border shadow-sm px-6 py-12">
-        <div className="max-w-2xl mx-auto flex items-center gap-6 menu-reveal">
-          <div className="h-20 w-20 rounded-[1.5rem] bg-card border border-border flex items-center justify-center text-foreground font-black text-3xl shadow-sm overflow-hidden">
-            {menu.branch.logoUrl ? (
-              <Image src={menu.branch.logoUrl} alt="" width={80} height={80} className="rounded-[1.5rem] object-cover" />
-            ) : (
-              menu.branch.name.charAt(0)
-            )}
-          </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-foreground">{menu.branch.name}</h1>
-            <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground font-black">
-              <div className="flex items-center gap-1.5"><Clock size={12} className="text-primary" /> OPEN</div>
-              <div className="flex items-center gap-1.5 truncate max-w-[180px]"><MapPin size={12} className="text-primary" /> {menu.branch.address || 'LOCAL'}</div>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-bg pb-28">
+      <MenuHero
+        branch={menu.branch}
+        cartCount={cartCount}
+        onOpenCart={() => setCartOpen(true)}
+        onOpenInfo={() => setShowInfo(true)}
+        onShare={handleShare}
+      />
 
-      {/* ─── Sticky Nav ────────────────────────────────────────── */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-3 mb-10 shadow-sm">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">A La Carte</div>
-          <Button variant="ghost" className="h-9 px-4 gap-2.5 font-black text-[10px] uppercase group" onClick={() => setCartOpen(true)}>
-             <Badge variant="primary" className="h-4.5 min-w-[20px] px-1 group-hover:bg-primary/90">{cartCount}</Badge>
-             <span className="text-foreground">Checkout</span>
-          </Button>
-        </div>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pt-6 sm:px-6 lg:grid lg:grid-cols-[1fr_360px] lg:items-start">
+        <section className="space-y-6">
+          <CategoryBar
+            categories={menu.categories}
+            activeCategory={activeCategory}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onCategorySelect={setActiveCategory}
+          />
+
+          {recommendations.length > 0 && !searchQuery && (
+            <section className="rounded-[2rem] border border-border/40 bg-surface p-4 sm:p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-base font-black text-fg">Recommended</h2>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
+                  Top picks
+                </span>
+              </div>
+              <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
+                {recommendations.map((item) => (
+                  <button
+                    key={`rec-${item.id}`}
+                    onClick={() => setSelectedItem(item)}
+                    className="min-w-[200px] rounded-2xl border border-border bg-bg p-3 text-left transition hover:bg-subtle"
+                  >
+                    <p className="truncate text-sm font-bold text-fg">{item.name}</p>
+                    <p className="mt-1 line-clamp-2 text-xs text-muted">
+                      {item.description || 'House recommendation'}
+                    </p>
+                    <p className="mt-2 text-sm font-black text-brand">
+                      {formatCurrency(item.price, menu.branch.currency || 'GHS')}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <AnimatePresence>
+            {filteredCategories.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="py-20 text-center"
+              >
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-subtle">
+                  <Search size={24} className="text-muted" />
+                </div>
+                <p className="font-bold text-fg">No items found</p>
+                <p className="text-sm text-muted">Try a different search</p>
+              </motion.div>
+            ) : (
+              filteredCategories.map((cat) => (
+                <MenuSection
+                  key={cat.id}
+                  category={cat}
+                  reduceMotion={!!reduceMotion}
+                  onSelectItem={setSelectedItem}
+                  onAddToCart={addToCart}
+                />
+              ))
+            )}
+          </AnimatePresence>
+        </section>
+
+        {/* Desktop sidebar cart */}
+        <aside className="hidden rounded-[2rem] border border-border/40 bg-surface p-6 lg:sticky lg:top-24 lg:block">
+          <h3 className="mb-4 text-lg font-black text-fg">Checkout</h3>
+          <CartContent {...cartProps} />
+        </aside>
       </div>
 
-      {/* ─── Categories ─────────────────────────────────────────── */}
-      <main className="max-w-2xl mx-auto px-6 space-y-12">
-        {menu.categories.map((cat) => (
-          <section key={cat.id} className="menu-reveal">
-            <h2 className="text-lg font-black text-foreground mb-6 flex items-center gap-2">
-              <div className="h-4 w-1 bg-primary rounded-full" />
-              {cat.name.toUpperCase()}
-            </h2>
-            <div className="grid gap-3">
-              {cat.items.map((item) => (
-                <Card key={item.id} className="group border-border hover:border-primary/30 transition-all overflow-hidden active:scale-[0.99] shadow-none hover:shadow-md">
-                  <CardContent className="p-0 flex items-center h-24">
-                    {item.imageUrl && (
-                      <div className="h-full w-24 shrink-0 relative overflow-hidden bg-muted">
-                        <Image src={item.imageUrl} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
-                      </div>
-                    )}
-                    <div className="flex-1 p-4 min-w-0">
-                      <div className="flex justify-between items-start gap-3">
-                        <h3 className="font-bold text-sm text-foreground truncate">{item.name}</h3>
-                        <p className="font-black text-primary text-sm shrink-0 tabular-nums">{formatGHS(item.price)}</p>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2 leading-snug font-medium italic">
-                        {item.description}
-                      </p>
-                    </div>
-                    <div className="pr-4">
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl"
-                        onClick={() => addToCart(item)}
-                      >
-                        <Plus size={20} />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-        ))}
-      </main>
-
-      {/* ─── Floating Bar ────────────────────────────────────────── */}
-      {cartCount > 0 && (
-        <div className="fixed bottom-6 left-0 right-0 z-50 px-6 menu-reveal">
-          <Button 
-            className="w-full max-w-md mx-auto h-14 rounded-2xl shadow-xl shadow-primary/20 text-base font-black tracking-tight"
-            onClick={() => setCartOpen(true)}
+      {/* Mobile floating cart button */}
+      <AnimatePresence>
+        {cartCount > 0 && !cartOpen && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 200 }}
+            className="fixed bottom-6 left-4 right-4 z-50 lg:hidden"
           >
-            <ShoppingCart size={20} className="mr-3" />
-            Process My Order • {formatGHS(cartTotal)}
-          </Button>
-        </div>
-      )}
-
-      {/* ─── Cart Modal ──────────────────────────────────────────── */}
-      <Modal open={cartOpen} onOpenChange={setCartOpen}>
-        <ModalContent className="rounded-t-[2.5rem] rounded-b-none sm:rounded-[2rem] max-w-2xl bottom-0 translate-y-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 border-border p-0">
-          <ModalHeader className="px-8 pt-8 pb-4">
-            <ModalTitle className="text-xl font-black">Shopping Cart</ModalTitle>
-          </ModalHeader>
-          
-          <div className="px-8 max-h-[50vh] overflow-y-auto space-y-3 pb-4">
-            {cart.length === 0 ? (
-              <div className="py-20 text-center space-y-4">
-                <ShoppingCart size={32} className="mx-auto text-muted-foreground/20" />
-                <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">Cart is empty</p>
+            <button
+              onClick={() => setCartOpen(true)}
+              className="flex h-14 w-full items-center justify-between rounded-2xl bg-brand px-5 text-white shadow-2xl shadow-brand/40"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
+                  <ShoppingCart size={17} />
+                </span>
+                <span className="font-bold">
+                  {cartCount} item{cartCount !== 1 ? 's' : ''}
+                </span>
               </div>
-            ) : (
-              <>
-                {cart.map((item) => (
-                  <div key={item.menuItemId} className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border">
-                    <div className="min-w-0">
-                      <p className="font-bold text-sm text-foreground truncate">{item.name}</p>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase opacity-60">{formatGHS(item.price)} / ITEM</p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => updateQty(item.menuItemId, -1)}>
-                        <Minus size={14} />
-                      </Button>
-                      <span className="text-xs font-black text-foreground w-4 text-center tabular-nums">{item.quantity}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => updateQty(item.menuItemId, 1)}>
-                        <Plus size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center gap-2">
+                <span className="font-bold">{formatCurrency(cartTotal, menu.branch.currency)}</span>
+                <ChevronRight size={17} />
+              </div>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                <div className="space-y-4 pt-6">
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Payment Method</p>
-                    <div className="flex gap-2">
-                      <Button 
-                        type="button"
-                        variant={paymentMethod === 'counter' ? 'primary' : 'outline'}
-                        className="flex-1 rounded-xl h-10 text-xs font-bold"
-                        onClick={() => setPaymentMethod('counter')}
-                      >
-                        Pay at Counter
-                      </Button>
-                      <Button 
-                        type="button"
-                        variant={paymentMethod === 'online' ? 'primary' : 'outline'}
-                        className="flex-1 rounded-xl h-10 text-xs font-bold"
-                        onClick={() => setPaymentMethod('online')}
-                      >
-                        Pay Online
-                      </Button>
-                    </div>
-                  </div>
+      {/* Mobile cart drawer */}
+      <AnimatePresence>
+        {cartOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCartOpen(false)}
+              className="fixed inset-0 z-[60] bg-black/40 lg:hidden"
+            />
+            <motion.section
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+              className="fixed bottom-0 left-0 right-0 z-[61] flex max-h-[90vh] flex-col rounded-t-[2.5rem] bg-surface lg:hidden"
+            >
+              <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-border" />
+              <div className="flex items-center justify-between p-6">
+                <h2 className="text-xl font-black text-fg">Your Order</h2>
+                <button
+                  onClick={() => setCartOpen(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-subtle text-muted transition-colors hover:text-fg"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-6 pb-10">
+                <CartContent {...cartProps} />
+              </div>
+            </motion.section>
+          </>
+        )}
+      </AnimatePresence>
 
-                  <Input label="Identity (Name)" placeholder="e.g. Ama" value={customerName} onValueChange={setCustomerName} className="bg-muted/40 border-border" />
-                  
-                  {paymentMethod === 'online' && (
-                    <Input label="Email Address" type="email" placeholder="ama@example.com" value={customerEmail} onValueChange={setCustomerEmail} className="bg-muted/40 border-border" />
-                  )}
+      <ItemDetailsModal
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+        onAddToCart={addToCart}
+      />
+      <RestaurantInfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        branch={menu.branch}
+        currentSlug={slug}
+      />
 
-                  <Input label="Table Identification" placeholder="e.g. 5" value={tableNumber} onValueChange={setTableNumber} className="bg-muted/40 border-border" />
-                </div>
-              </>
-            )}
-          </div>
-
-          <ModalFooter className="flex-col px-8 pb-8 pt-4 gap-4 border-t border-border">
-            <div className="flex justify-between w-full mb-2">
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Summary</span>
-              <span className="text-xl font-black text-primary tabular-nums">{formatGHS(cartTotal)}</span>
-            </div>
-            <div className="flex w-full gap-3">
-              <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={() => setCartOpen(false)}>Back</Button>
-              <Button className="flex-[2] rounded-xl h-11 font-black" loading={placing} disabled={cart.length === 0} onClick={handleCheckout}>
-                {paymentMethod === 'online' ? 'Pay Now' : 'Place Order'} <Send size={16} className="ml-2" />
-              </Button>
-            </div>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <AnimatePresence>
+        {showBackToTop && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-24 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-surface text-brand shadow-lg ring-1 ring-border transition-all hover:bg-brand hover:text-white lg:bottom-10"
+          >
+            <ChevronUp size={20} />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -5,12 +5,12 @@ import { ThemeToggle } from './ThemeToggle';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAppSelector, useAppDispatch } from '@/stores/store';
 import { setCurrentBranch } from '@/stores/branchSlice';
-import { 
-  DropdownMenu, 
-  DropdownMenuTrigger, 
-  DropdownMenuContent, 
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel
+  DropdownMenuLabel,
 } from '@/components/ui/DropdownMenu';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
@@ -26,16 +26,16 @@ export function Topbar({ onToggleSidebar, mode = 'owner' }: TopbarProps) {
   const { branches, current: branch } = useAppSelector((s) => s.branch);
   const isManager = mode === 'manager';
 
-  const branchName = isManager 
+  const branchName = isManager
     ? (user?.staffMember?.branch?.name ?? 'Branch')
     : (branch?.name ?? 'Select Branch');
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between px-5 bg-bg border-b border-border/40">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/40 bg-bg px-5">
       {/* Mobile hamburger */}
       <div className="flex items-center gap-4">
         <button
-          className="lg:hidden text-muted hover:text-fg transition-colors duration-100 p-1 -ml-1 rounded-lg hover:bg-subtle"
+          className="-ml-1 rounded-lg p-1 text-muted transition-colors duration-100 hover:bg-subtle hover:text-fg lg:hidden"
           onClick={onToggleSidebar}
           aria-label="Open navigation"
         >
@@ -44,41 +44,45 @@ export function Topbar({ onToggleSidebar, mode = 'owner' }: TopbarProps) {
 
         {/* Branch Switcher / Label */}
         {isManager ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/30 border border-border/50">
-            <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/30 px-3 py-1.5">
+            <div className="bg-primary/10 text-primary flex h-5 w-5 items-center justify-center rounded-lg">
               <GitBranch size={12} strokeWidth={2.5} />
             </div>
-            <span className="text-xs font-bold text-foreground">
-              {branchName}
-            </span>
-            <Badge variant="outline" className="ml-1 text-[9px] uppercase tracking-wider py-0 px-1.5 h-4 font-bold border-primary/20 text-primary/80">
+            <span className="text-xs font-bold text-foreground">{branchName}</span>
+            <Badge
+              variant="outline"
+              className="border-primary/20 text-primary/80 ml-1 h-4 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider"
+            >
               Manager
             </Badge>
           </div>
         ) : branches.length > 0 ? (
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/50 border border-border hover:bg-muted transition-all group">
-              <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <DropdownMenuTrigger className="group flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-3 py-1.5 transition-all hover:bg-muted">
+              <div className="bg-primary/10 text-primary flex h-5 w-5 items-center justify-center rounded-lg">
                 <GitBranch size={12} strokeWidth={2.5} />
               </div>
-              <span className="text-xs font-bold text-foreground">
-                {branchName}
-              </span>
-              <ChevronDown size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+              <span className="text-xs font-bold text-foreground">{branchName}</span>
+              <ChevronDown
+                size={14}
+                className="text-muted-foreground transition-colors group-hover:text-foreground"
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56 p-2">
               <DropdownMenuLabel>Your Locations</DropdownMenuLabel>
               {branches.map((b) => (
-                <DropdownMenuItem 
-                  key={b.id} 
+                <DropdownMenuItem
+                  key={b.id}
                   onClick={() => dispatch(setCurrentBranch(b))}
                   className={cn(
-                    "flex items-center justify-between gap-2 px-2 py-2 rounded-lg cursor-pointer",
-                    branch?.id === b.id ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground hover:bg-muted"
+                    'flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-2',
+                    branch?.id === b.id
+                      ? 'bg-primary/10 text-primary font-bold'
+                      : 'text-muted-foreground hover:bg-muted',
                   )}
                 >
                   <span className="flex-1 truncate">{b.name}</span>
-                  {branch?.id === b.id && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                  {branch?.id === b.id && <div className="bg-primary h-1.5 w-1.5 rounded-full" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -93,12 +97,14 @@ export function Topbar({ onToggleSidebar, mode = 'owner' }: TopbarProps) {
           <ThemeToggle />
         </div>
 
-        <div className="w-px h-4 bg-border mx-1.5" />
+        <div className="mx-1.5 h-4 w-px bg-border" />
 
         <div className="flex items-center gap-2">
-          <div className="text-right hidden sm:block">
-            <p className="text-xs font-medium text-fg leading-tight">{user?.fullName ?? '—'}</p>
-            <p className="text-[10px] text-muted font-bold uppercase tracking-tighter">Owner Account</p>
+          <div className="hidden text-right sm:block">
+            <p className="text-xs font-medium leading-tight text-fg">{user?.fullName ?? '—'}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-muted">
+              {isManager ? 'Manager Account' : 'Owner Account'}
+            </p>
           </div>
           <Avatar name={user?.fullName} size="sm" />
         </div>

@@ -114,6 +114,32 @@ export default function SettingsPage() {
     }
   }, [restaurant]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get('reference');
+    if (reference) {
+      setLoading(true);
+      api
+        .post(`/subscriptions/verify/${reference}`)
+        .then(() => {
+          toast.success('Payment verified successfully!');
+          dispatch(initAuth());
+          // Clean up URL
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname + '?tab=billing',
+          );
+        })
+        .catch(() => {
+          toast.error('Payment verification is pending or failed.');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [dispatch]);
+
   useGSAP(
     () => {
       gsap.from('.settings-reveal', {
@@ -187,6 +213,20 @@ export default function SettingsPage() {
       window.location.href = data.data.authorizationUrl;
     } catch (err: any) {
       toast.error(err.response?.data?.message ?? 'Action failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartTrial = async (plan: string) => {
+    if (!restaurant) return;
+    setLoading(true);
+    try {
+      const { data } = await api.post(`/restaurants/${restaurant.id}/subscription/trial`, { plan });
+      toast.success(data.message);
+      await dispatch(initAuth());
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Trial activation failed');
     } finally {
       setLoading(false);
     }
@@ -328,7 +368,9 @@ export default function SettingsPage() {
                         key={plan}
                         className={cn(
                           'relative flex flex-col rounded-2xl border p-5 transition-all',
-                          isCurrent ? 'bg-primary/5 border-primary' : 'border-border bg-muted/20',
+                          isCurrent
+                            ? 'bg-primary/5 border-primary shadow-primary/5 shadow-inner'
+                            : 'border-border bg-muted/20',
                         )}
                       >
                         {isCurrent && (
@@ -371,14 +413,25 @@ export default function SettingsPage() {
                           ))}
                         </ul>
                         {!isCurrent && plan !== 'starter' && (
-                          <Button
-                            variant="outline"
-                            className="h-8 w-full text-[10px]"
-                            onClick={() => handleUpgrade(plan)}
-                            loading={loading}
-                          >
-                            Adopt {plan}
-                          </Button>
+                          <div className="mt-auto space-y-2 pt-4">
+                            <Button
+                              variant="outline"
+                              className="h-8 w-full text-[10px] font-black"
+                              onClick={() => handleUpgrade(plan)}
+                              loading={loading}
+                            >
+                              Subscribe to {plan}
+                            </Button>
+                            {!restaurant.subExpiresAt && (
+                              <button
+                                onClick={() => handleStartTrial(plan)}
+                                disabled={loading}
+                                className="text-primary w-full text-center text-[9px] font-bold hover:underline"
+                              >
+                                Start 1-month Free Trial
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     );

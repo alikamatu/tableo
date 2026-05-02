@@ -3,8 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import {
-  ArrowLeft, Store, MapPin, Phone,
-  Check, User, Mail, Copy, ExternalLink
+  ArrowLeft,
+  Store,
+  MapPin,
+  Phone,
+  Check,
+  User,
+  Mail,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/stores/store';
 import { createBranch } from '@/stores/branchSlice';
@@ -24,12 +31,19 @@ import * as React from 'react';
 export default function NewBranchPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { restaurants, current: currentRestaurant, loading: restLoading } = useAppSelector((s) => s.restaurant);
+  const {
+    restaurants,
+    current: currentRestaurant,
+    loading: restLoading,
+  } = useAppSelector((s) => s.restaurant);
 
   const [form, setForm] = useState({
     restaurantId: '',
-    name: '', address: '', phone: '',
-    managerName: '', managerEmail: ''
+    name: '',
+    address: '',
+    phone: '',
+    managerName: '',
+    managerEmail: '',
   });
   const [loading, setLoading] = useState(false);
   const [tempPass, setTempPass] = useState<string | null>(null);
@@ -44,21 +58,24 @@ export default function NewBranchPage() {
 
   useEffect(() => {
     if (currentRestaurant && !form.restaurantId) {
-      setForm(prev => ({ ...prev, restaurantId: currentRestaurant.id }));
+      setForm((prev) => ({ ...prev, restaurantId: currentRestaurant.id }));
     } else if (restaurants.length > 0 && !form.restaurantId) {
-      setForm(prev => ({ ...prev, restaurantId: restaurants[0]!.id }));
+      setForm((prev) => ({ ...prev, restaurantId: restaurants[0]!.id }));
     }
   }, [currentRestaurant, restaurants, form.restaurantId]);
 
-  useGSAP(() => {
-    gsap.from('.reveal', {
-      opacity: 0,
-      y: 20,
-      stagger: 0.1,
-      duration: 0.5,
-      ease: 'power3.out'
-    });
-  }, { scope: containerRef });
+  useGSAP(
+    () => {
+      gsap.from('.reveal', {
+        opacity: 0,
+        y: 20,
+        stagger: 0.1,
+        duration: 0.5,
+        ease: 'power3.out',
+      });
+    },
+    { scope: containerRef },
+  );
 
   const update = (field: string) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -78,15 +95,13 @@ export default function NewBranchPage() {
 
     setLoading(true);
     try {
-      const res = await dispatch(
-        createBranch(form),
-      ).unwrap();
+      const res = await dispatch(createBranch(form)).unwrap();
 
       if ((res as any).managerPassword) {
         setTempPass((res as any).managerPassword);
       } else {
         toast.success('Branch created successfully');
-        router.push('/dashboard/dashboard/branches');
+        router.push('/dashboard/branches');
       }
     } catch (err: any) {
       toast.error(err ?? 'Failed to create branch');
@@ -101,31 +116,35 @@ export default function NewBranchPage() {
   };
 
   return (
-    <div ref={containerRef} className="max-w-2xl mx-auto space-y-8 pb-10">
+    <div ref={containerRef} className="mx-auto max-w-2xl space-y-8 pb-10">
       <div className="reveal flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
-          className="h-10 w-10 p-0 rounded-xl hover:bg-muted"
+          className="h-10 w-10 rounded-xl p-0 hover:bg-muted"
         >
           <ArrowLeft size={20} />
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">New Branch</h1>
-          <p className="text-muted-foreground text-sm font-medium">Add a new location and assign a manager</p>
+          <p className="text-muted-foreground text-sm font-medium">
+            Add a new location and assign a manager
+          </p>
         </div>
       </div>
 
-      <Card className="reveal border-none shadow-xl bg-surface overflow-hidden">
-        <CardHeader className="bg-primary/5 border-b border-primary/10 p-6">
+      <Card className="reveal overflow-hidden border-none bg-surface shadow-xl">
+        <CardHeader className="bg-primary/5 border-primary/10 border-b p-6">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
               <Store size={20} />
             </div>
             <div>
               <CardTitle className="text-lg">Target Restaurant</CardTitle>
-              <p className="text-xs text-muted-foreground font-medium">Which restaurant does this branch belong to?</p>
+              <p className="text-muted-foreground text-xs font-medium">
+                Which restaurant does this branch belong to?
+              </p>
             </div>
           </div>
         </CardHeader>
@@ -135,8 +154,8 @@ export default function NewBranchPage() {
             <Select
               value={form.restaurantId}
               onValueChange={update('restaurantId')}
-              options={restaurants.map(r => ({ label: r.name, value: r.id }))}
-              placeholder={restLoading ? "Loading restaurants..." : "Choose a restaurant"}
+              options={restaurants.map((r) => ({ label: r.name, value: r.id }))}
+              placeholder={restLoading ? 'Loading restaurants...' : 'Choose a restaurant'}
               className="h-12"
             />
           </div>
@@ -146,16 +165,18 @@ export default function NewBranchPage() {
 
         <CardHeader className="p-6 pb-0">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
               <MapPin size={20} />
             </div>
             <div>
               <CardTitle className="text-lg">Location Details</CardTitle>
-              <p className="text-xs text-muted-foreground font-medium">Enter the basic info for your new branch</p>
+              <p className="text-muted-foreground text-xs font-medium">
+                Enter the basic info for your new branch
+              </p>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-8 space-y-8">
+        <CardContent className="space-y-8 p-8">
           <form onSubmit={handleCreate} className="space-y-8">
             <div className="space-y-4">
               <Input
@@ -189,13 +210,13 @@ export default function NewBranchPage() {
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <Divider className="flex-1" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 whitespace-nowrap">
+                <span className="text-muted-foreground/60 whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.2em]">
                   Branch Manager Setup
                 </span>
                 <Divider className="flex-1" />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Input
                   label="Manager Full Name"
                   placeholder="e.g. Kofi Mensah"
@@ -213,16 +234,16 @@ export default function NewBranchPage() {
                   className="h-12"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground font-medium italic">
+              <p className="text-muted-foreground text-[10px] font-medium italic">
                 * We will create a manager account with a temporary password for this branch.
               </p>
             </div>
 
-            <div className="pt-4 flex items-center gap-3">
+            <div className="flex items-center gap-3 pt-4">
               <Button
                 type="button"
                 variant="muted"
-                className="flex-1 h-12 rounded-xl font-bold"
+                className="h-12 flex-1 rounded-xl font-bold"
                 onClick={() => router.back()}
               >
                 Cancel
@@ -230,7 +251,7 @@ export default function NewBranchPage() {
               <Button
                 type="submit"
                 loading={loading}
-                className="flex-1 h-12 rounded-xl font-bold shadow-lg shadow-primary/20"
+                className="shadow-primary/20 h-12 flex-1 rounded-xl font-bold shadow-lg"
                 startContent={!loading && <Check size={18} />}
               >
                 Create Branch
@@ -241,53 +262,61 @@ export default function NewBranchPage() {
       </Card>
 
       {/* SUCCESS MODAL WITH PASSWORD */}
-      <Modal open={!!tempPass} onOpenChange={() => { }}>
+      <Modal open={!!tempPass} onOpenChange={() => {}}>
         <ModalContent className="sm:max-w-md">
           <ModalHeader>
-            <div className="mx-auto h-12 w-12 rounded-full bg-success/10 flex items-center justify-center mb-2">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
               <Check className="text-success" size={24} />
             </div>
             <ModalTitle className="text-center text-xl">Branch Created!</ModalTitle>
           </ModalHeader>
           <div className="space-y-6 py-4 text-center">
-            <p className="text-sm text-muted-foreground font-medium px-4">
-              The branch has been setup successfully. Share these login credentials with <span className="text-foreground font-bold">{form.managerName}</span>.
+            <p className="text-muted-foreground px-4 text-sm font-medium">
+              The branch has been setup successfully. Share these login credentials with{' '}
+              <span className="font-bold text-foreground">{form.managerName}</span>.
             </p>
 
             <div className="space-y-3 px-4">
-              <div className="p-4 rounded-2xl bg-muted/50 border border-border text-left space-y-1 relative group">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Email Address</p>
+              <div className="group relative space-y-1 rounded-2xl border border-border bg-muted/50 p-4 text-left">
+                <p className="text-muted-foreground text-[10px] font-bold uppercase">
+                  Email Address
+                </p>
                 <p className="text-sm font-bold text-foreground">{form.managerEmail}</p>
                 <button
                   onClick={() => copyToClipboard(form.managerEmail)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-background transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 transition-colors hover:bg-background"
                 >
                   <Copy size={14} className="text-muted-foreground" />
                 </button>
               </div>
 
-              <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 text-left space-y-1 relative group">
-                <p className="text-[10px] font-bold text-primary/60 uppercase">Temporary Password</p>
-                <p className="text-lg font-mono font-bold text-primary tracking-wider">{tempPass}</p>
+              <div className="bg-primary/5 border-primary/10 group relative space-y-1 rounded-2xl border p-4 text-left">
+                <p className="text-primary/60 text-[10px] font-bold uppercase">
+                  Temporary Password
+                </p>
+                <p className="text-primary font-mono text-lg font-bold tracking-wider">
+                  {tempPass}
+                </p>
                 <button
                   onClick={() => tempPass && copyToClipboard(tempPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-white/50 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 transition-colors hover:bg-white/50"
                 >
                   <Copy size={16} className="text-primary" />
                 </button>
               </div>
             </div>
 
-            <div className="bg-orange-500/5 p-4 rounded-xl border border-orange-500/10 mx-4">
-              <p className="text-[11px] text-orange-600 font-bold leading-relaxed">
-                IMPORTANT: This password is only shown once. Please copy it now. The manager will be asked to change it upon login.
+            <div className="mx-4 rounded-xl border border-orange-500/10 bg-orange-500/5 p-4">
+              <p className="text-[11px] font-bold leading-relaxed text-orange-600">
+                IMPORTANT: This password is only shown once. Please copy it now. The manager will be
+                asked to change it upon login.
               </p>
             </div>
           </div>
           <ModalFooter>
             <Button
-              className="w-full h-12 rounded-xl font-bold"
-              onClick={() => router.push('/dashboard/dashboard/branches')}
+              className="h-12 w-full rounded-xl font-bold"
+              onClick={() => router.push('/dashboard/branches')}
             >
               Done, go to locations
             </Button>

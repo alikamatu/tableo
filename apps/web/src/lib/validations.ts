@@ -63,17 +63,49 @@ export type CreateBranchFormData = z.infer<typeof createBranchSchema>;
 
 export const createCategorySchema = z.object({
   name: z.string().min(1, 'Name is required.').max(80),
+  parentId: z.string().uuid().optional().or(z.literal('')),
+  coverUrl: z.string().url().optional().or(z.literal('')),
+  description: z.string().max(300).optional(),
   sortOrder: z.coerce.number().min(0).optional(),
+  isActive: z.boolean().optional(),
 });
 export type CreateCategoryFormData = z.infer<typeof createCategorySchema>;
+
+const priceVariantRowSchema = z.object({
+  label: z.string().min(1, 'Variant label is required.').max(60),
+  price: z.coerce.number().min(0, 'Variant price must be positive.'),
+});
 
 export const createMenuItemSchema = z.object({
   categoryId: z.string().uuid('Select a category.'),
   name: z.string().min(1, 'Name is required.').max(120),
-  description: z.string().max(500).optional(),
+  description: z.string().max(600).optional(),
   basePrice: z.coerce.number().min(0, 'Price must be positive.'),
+  discountedPrice: z.coerce.number().min(0, 'Discount must be positive.').optional(),
   imageUrl: z.string().url().optional().or(z.literal('')),
+  galleryUrls: z.array(z.string().url()).optional(),
+  priceVariants: z.array(priceVariantRowSchema).optional(),
+  label: z
+    .enum([
+      'none',
+      'new_item',
+      'bestseller',
+      'spicy',
+      'vegetarian',
+      'vegan',
+      'gluten_free',
+      'chef_special',
+      'limited',
+    ])
+    .optional(),
+  tags: z.array(z.string()).optional(),
+  allergens: z.array(z.string()).optional(),
+  calories: z.coerce.number().int().min(0).max(9999).optional(),
+  prepTime: z.coerce.number().int().min(0).optional(),
   isAvailable: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
+  availableFrom: z.string().optional(),
+  availableTo: z.string().optional(),
   sortOrder: z.coerce.number().min(0).optional(),
 });
 export type CreateMenuItemFormData = z.infer<typeof createMenuItemSchema>;

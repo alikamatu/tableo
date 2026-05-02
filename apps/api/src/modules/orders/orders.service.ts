@@ -1,10 +1,8 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../config/prisma.service';
+import type { ConfigService } from '@nestjs/config';
+import axios from 'axios';
+import type { PrismaService } from '../../config/prisma.service';
 import { paginate, buildPaginationMeta } from '@tableo/utils';
 import type { CreateOrderDto } from './dto/create-order.dto';
 import type { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -13,81 +11,207 @@ import type { QueryOrdersDto } from './dto/query-orders.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService,
+  ) {}
 
-  /**
-   * Create an order from the public-facing menu.
-   * Resolves prices from MenuItem + BranchOverride, calculates total,
-   * and wraps everything in a transaction.
-   */
+  // ─── Get Paystack secret for a branch ──────────────────────
+  private getPaystackSecret(branch: unknown) {
+    const b = branch as any;
+    const secret =
+      b?.restaurant?.paystackSecretKey || this.config.get<string>('PAYSTACK_SECRET_KEY', '');
+    return secret || null;
+  }
+
+  // ─── Verify a Paystack reference against the API ──────────────────────────
+
+  private async verifyPaystackReference(
+    secret: string,
+    reference: string,
+  ): Promise<{ verified: boolean; reference: string }> {
+    if (!secret) return { verified: false, reference };
+
+    try {
+      const { data } = await axios.get<{
+        status: boolean;
+        data?: { status?: string; reference?: string };
+      }>(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+        headers: { Authorization: `Bearer ${secret}` },
+        timeout: 10_000,
+      });
+
+      const verified = data.status === true && data.data?.status === 'success';
+      return { verified, reference: data.data?.reference ?? reference };
+    } catch {
+      return { verified: false, reference };
+    }
+  }
+
+  // ─── Create order ─────────────────────────────────────────────────────────
+
   async create(dto: CreateOrderDto) {
-    if (!dto.items.length) {
-      throw new BadRequestException('Order must contain at least one item');
+    if (!dto.items?.length) {
+      throw new BadRequestException('Order must contain at least one item.');
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // Resolve item prices
+      // Resolve item prices with branch overrides
       const resolvedItems = await Promise.all(
-        dto.items.map(async (item) => {
+        dto.items.map(async (line) => {
           const menuItem = await tx.menuItem.findUnique({
-            where: { id: item.menuItemId },
-            include: {
-              branchOverrides: { where: { branchId: dto.branchId } },
-            },
+            where: { id: line.menuItemId },
+            include: { branchOverrides: { where: { branchId: dto.branchId } } },
           });
-
           if (!menuItem) {
-            throw new NotFoundException(
-              `Menu item ${item.menuItemId} not found`,
-            );
+            throw new NotFoundException(`Menu item ${line.menuItemId} not found.`);
           }
 
           const override = menuItem.branchOverrides[0];
-          const isAvailable = override?.isAvailable ?? menuItem.isAvailable;
-          if (!isAvailable) {
-            throw new BadRequestException(
-              `"${menuItem.name}" is currently unavailable`,
-            );
+          const available = override?.isAvailable ?? menuItem.isAvailable;
+          if (!available) {
+            throw new BadRequestException(`"${menuItem.name}" is currently unavailable.`);
           }
 
-          const unitPrice = Number(override?.priceOverride ?? menuItem.basePrice);
+          const unitPrice = new Prisma.Decimal(
+            (override?.priceOverride ?? menuItem.basePrice).toString(),
+          );
 
           return {
             menuItemId: menuItem.id,
             nameSnapshot: menuItem.name,
-            unitPrice: new Prisma.Decimal(unitPrice),
-            quantity: item.quantity,
-            note: item.note ?? null,
+            unitPrice,
+            quantity: line.quantity,
+            note: line.note ?? null,
           };
         }),
       );
 
-      // Calculate total
       const total = resolvedItems.reduce(
-        (sum, i) => sum + Number(i.unitPrice) * i.quantity,
-        0,
+        (sum, i) => sum.add(i.unitPrice.mul(new Prisma.Decimal(i.quantity))),
+        new Prisma.Decimal(0),
       );
 
-      // Create order with items
-      return tx.order.create({
+      const orderNumber = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      const order = await tx.order.create({
         data: {
+          orderNumber,
           branchId: dto.branchId,
+          type: dto.type ?? 'dine_in',
           tableNumber: dto.tableNumber ?? null,
           customerName: dto.customerName ?? null,
           paymentMethod: dto.paymentMethod,
-          total: new Prisma.Decimal(total),
-          orderItems: {
-            create: resolvedItems,
-          },
+          paystackRef: dto.paystackRef ?? null,
+          total,
+          orderItems: { create: resolvedItems },
         },
-        include: { orderItems: true },
+        include: {
+          orderItems: true,
+          branch: { include: { restaurant: { select: { paystackSecretKey: true } } } },
+        },
       });
+
+      // Synchronous verification if reference is provided
+      if (dto.paymentMethod === 'online' && dto.paystackRef) {
+        const secret = this.getPaystackSecret(order.branch);
+        if (secret) {
+          const { verified, reference } = await this.verifyPaystackReference(
+            secret,
+            dto.paystackRef,
+          );
+          if (verified) {
+            const updated = await tx.order.update({
+              where: { id: order.id },
+              data: { paymentStatus: 'paid', paystackRef: reference },
+              include: { orderItems: true },
+            });
+            return this.transformOrder(updated);
+          }
+        }
+      }
+
+      return this.transformOrder(order);
     });
   }
 
-  /**
-   * List orders for a branch with pagination and optional filters.
-   */
+  // ─── Verify payment for an existing order ────────────────────────────────
+  // Called by the frontend immediately after Paystack's onSuccess callback.
+
+  async verifyAndMarkPaid(orderId: string, reference?: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        branch: {
+          include: {
+            restaurant: { select: { paystackSecretKey: true } },
+          },
+        },
+        orderItems: true,
+      },
+    });
+    if (!order) throw new NotFoundException('Order not found.');
+
+    // Use the reference passed in, or the one stored on the order
+    const ref = reference ?? order.paystackRef;
+    if (!ref) {
+      throw new BadRequestException(
+        'No Paystack reference. Provide the reference from the payment callback.',
+      );
+    }
+
+    const secret = this.getPaystackSecret(order.branch);
+
+    if (!secret) {
+      throw new BadRequestException('Paystack secret key is not configured on this restaurant.');
+    }
+
+    const { verified, reference: confirmedRef } = await this.verifyPaystackReference(secret, ref);
+
+    if (!verified) {
+      throw new BadRequestException(
+        'Paystack verification failed. Payment may not have completed yet.',
+      );
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: 'paid',
+        paystackRef: confirmedRef,
+      },
+      include: { orderItems: true },
+    });
+
+    return this.transformOrder(updated);
+  }
+
+  // ─── Paystack webhook ─────────────────────────────────────────────────────
+  // Handles both `charge.success` (inline payment) and `subscription.create`.
+
+  async handlePaystackWebhook(event: string, data: Record<string, unknown>) {
+    if (event === 'charge.success') {
+      const reference = data.reference as string | undefined;
+      if (!reference) return { received: true, ignored: true };
+
+      const order = await this.prisma.order.findFirst({
+        where: { paystackRef: reference },
+      });
+
+      if (order) {
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: { paymentStatus: 'paid' },
+        });
+        return { received: true, updated: true };
+      }
+    }
+
+    return { received: true, ignored: true };
+  }
+
+  // ─── List orders for a branch ─────────────────────────────────────────────
+
   async findByBranch(branchId: string, query: QueryOrdersDto) {
     const { take, skip } = paginate(query.page ?? 1, query.limit ?? 20);
 
@@ -111,44 +235,42 @@ export class OrdersService {
     ]);
 
     return {
-      data: orders,
+      data: orders.map((o) => this.transformOrder(o)),
       meta: buildPaginationMeta(total, query.page ?? 1, take),
     };
   }
 
-  /**
-   * Get a single order with its items.
-   */
+  // ─── Find one order ───────────────────────────────────────────────────────
+
   async findOne(branchId: string, orderId: string) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, branchId },
       include: { orderItems: true },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) throw new NotFoundException('Order not found.');
     return order;
   }
 
-  /**
-   * Update order status (pending → confirmed → ready → done | cancelled).
-   */
+  // ─── Update order status ──────────────────────────────────────────────────
+
   async updateStatus(branchId: string, orderId: string, dto: UpdateOrderStatusDto) {
     const order = await this.findOne(branchId, orderId);
     if (order.status === 'cancelled' || order.status === 'done') {
-      throw new BadRequestException(`Cannot update a ${order.status} order`);
+      throw new BadRequestException(`Cannot update a ${order.status} order.`);
     }
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: dto.status },
       include: { orderItems: true },
     });
+    return this.transformOrder(updated);
   }
 
-  /**
-   * Update order payment status.
-   */
+  // ─── Update payment status (manual mark-as-paid) ─────────────────────────
+
   async updatePayment(branchId: string, orderId: string, dto: UpdatePaymentDto) {
     await this.findOne(branchId, orderId);
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         paymentStatus: dto.paymentStatus,
@@ -156,5 +278,21 @@ export class OrdersService {
       },
       include: { orderItems: true },
     });
+    return this.transformOrder(updated);
+  }
+
+  // ─── Transform: coerce Decimal → number ──────────────────────────────────
+
+  public transformOrder(order: unknown) {
+    const o = order as Record<string, any>;
+    if (!o) return null;
+    return {
+      ...o,
+      total: o['total'] ? parseFloat(o['total'].toString()) : 0,
+      orderItems: (o['orderItems'] as Record<string, unknown>[] | undefined)?.map((item) => ({
+        ...item,
+        unitPrice: item['unitPrice'] ? parseFloat(item['unitPrice'].toString()) : 0,
+      })),
+    };
   }
 }

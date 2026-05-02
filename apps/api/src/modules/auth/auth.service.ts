@@ -5,13 +5,13 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import type { JwtService } from '@nestjs/jwt';
+import type { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
-import { PrismaService } from '../../config/prisma.service';
-import { EmailService } from './email.service';
+import type { PrismaService } from '../../config/prisma.service';
+import type { EmailService } from './email.service';
 import type { JwtPayload, JwtTokens } from '@tableo/types';
 import type { RegisterDto } from './dto/register.dto';
 import type { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -34,7 +34,9 @@ export class AuthService {
   // ─── Register ───────────────────────────────────────────────────────────────
 
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
     if (existing) throw new ConflictException('An account with this email already exists.');
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -55,11 +57,18 @@ export class AuthService {
 
     void this.email.sendVerificationEmail(user.email, user.fullName, verificationToken);
 
-    const tokens = await this.issueTokens({ sub: user.id, email: user.email, onboardComplete: false });
+    const tokens = await this.issueTokens({
+      sub: user.id,
+      email: user.email,
+      onboardComplete: false,
+    });
     return {
       user: {
-        id: user.id, email: user.email, fullName: user.fullName,
-        emailVerified: user.emailVerified, onboardComplete: user.onboardComplete,
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        emailVerified: user.emailVerified,
+        onboardComplete: user.onboardComplete,
         staffMember: null,
       },
       ...tokens,
@@ -96,8 +105,11 @@ export class AuthService {
 
     return {
       user: {
-        id: user.id, email: user.email, fullName: user.fullName,
-        emailVerified: user.emailVerified, onboardComplete: user.onboardComplete,
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        emailVerified: user.emailVerified,
+        onboardComplete: user.onboardComplete,
         staffMember,
       },
       ...tokens,
@@ -120,7 +132,8 @@ export class AuthService {
       payload.staffRole = staffMember.role;
       payload.branchId = staffMember.branchId;
     }
-    return this.issueTokens(payload);
+    const tokens = await this.issueTokens(payload);
+    return { ...tokens, onboardComplete: user.onboardComplete };
   }
 
   // ─── Me ─────────────────────────────────────────────────────────────────────
@@ -129,8 +142,13 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, email: true, fullName: true, phone: true,
-        emailVerified: true, onboardComplete: true, createdAt: true,
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        emailVerified: true,
+        onboardComplete: true,
+        createdAt: true,
       },
     });
     if (!user) throw new UnauthorizedException();
@@ -165,7 +183,10 @@ export class AuthService {
 
     const verificationToken = randomBytes(32).toString('hex');
     const verificationTokenExp = new Date(Date.now() + VERIFICATION_EXPIRES_HOURS * 60 * 60 * 1000);
-    await this.prisma.user.update({ where: { id: user.id }, data: { verificationToken, verificationTokenExp } });
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken, verificationTokenExp },
+    });
     void this.email.sendVerificationEmail(user.email, user.fullName, verificationToken);
     return { message: 'Verification email sent.' };
   }
@@ -174,11 +195,15 @@ export class AuthService {
 
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
-    if (!user) return { message: 'If an account exists for that email, a reset link has been sent.' };
+    if (!user)
+      return { message: 'If an account exists for that email, a reset link has been sent.' };
 
     const resetToken = randomBytes(32).toString('hex');
     const resetExp = new Date(Date.now() + RESET_EXPIRES_MINUTES * 60 * 1000);
-    await this.prisma.user.update({ where: { id: user.id }, data: { passwordResetToken: resetToken, passwordResetTokenExp: resetExp } });
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetToken: resetToken, passwordResetTokenExp: resetExp },
+    });
     void this.email.sendPasswordResetEmail(user.email, user.fullName, resetToken);
     return { message: 'If an account exists for that email, a reset link has been sent.' };
   }
@@ -291,7 +316,10 @@ export class AuthService {
       include: {
         branch: {
           select: {
-            id: true, name: true, slug: true, restaurantId: true,
+            id: true,
+            name: true,
+            slug: true,
+            restaurantId: true,
             restaurant: { select: { id: true, name: true, logoUrl: true } },
           },
         },

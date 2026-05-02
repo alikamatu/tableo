@@ -42,16 +42,16 @@ tableo/
 
 ### Tech Stack
 
-| Layer        | Technology                                         |
-| ------------ | -------------------------------------------------- |
-| Monorepo     | Turborepo + npm workspaces                         |
-| API          | NestJS 10, Prisma 5, PostgreSQL 16, Redis, BullMQ  |
-| Web          | Next.js 15, React 19, HeroUI, Redux Toolkit, Zod   |
-| Charts       | Recharts                                           |
-| Auth         | JWT (access + refresh tokens), Passport.js         |
-| Payments     | Paystack (subscriptions + webhooks)                |
-| File Uploads | Cloudinary                                         |
-| DevOps       | Docker Compose, Nginx, GitHub Actions              |
+| Layer        | Technology                                        |
+| ------------ | ------------------------------------------------- |
+| Monorepo     | Turborepo + npm workspaces                        |
+| API          | NestJS 10, Prisma 5, PostgreSQL 16, Redis, BullMQ |
+| Web          | Next.js 15, React 19, HeroUI, Redux Toolkit, Zod  |
+| Charts       | Recharts                                          |
+| Auth         | JWT (access + refresh tokens), Passport.js        |
+| Payments     | Paystack (subscriptions + webhooks)               |
+| File Uploads | Cloudinary                                        |
+| DevOps       | Docker Compose, Nginx, GitHub Actions             |
 
 ## 🚀 Quick Start
 
@@ -116,99 +116,110 @@ This starts PostgreSQL, Redis, API, Web, and Nginx. Access the app at http://loc
 ## 📡 API Endpoints
 
 ### Auth
-| Method | Endpoint           | Description     | Auth |
-| ------ | ------------------ | --------------- | ---- |
-| POST   | `/auth/register`   | Create account  | ❌   |
-| POST   | `/auth/login`      | Sign in         | ❌   |
-| POST   | `/auth/refresh`    | Refresh tokens  | ✅   |
-| GET    | `/auth/me`         | Current user    | ✅   |
+
+| Method | Endpoint         | Description    | Auth |
+| ------ | ---------------- | -------------- | ---- |
+| POST   | `/auth/register` | Create account | ❌   |
+| POST   | `/auth/login`    | Sign in        | ❌   |
+| POST   | `/auth/refresh`  | Refresh tokens | ✅   |
+| GET    | `/auth/me`       | Current user   | ✅   |
 
 ### Restaurants
-| Method | Endpoint             | Description        | Auth |
-| ------ | -------------------- | ------------------ | ---- |
-| POST   | `/restaurants`       | Create restaurant  | ✅   |
-| GET    | `/restaurants`       | List restaurants   | ✅   |
-| GET    | `/restaurants/:id`   | Get restaurant     | ✅   |
-| PATCH  | `/restaurants/:id`   | Update restaurant  | ✅   |
-| DELETE | `/restaurants/:id`   | Delete restaurant  | ✅   |
+
+| Method | Endpoint           | Description       | Auth |
+| ------ | ------------------ | ----------------- | ---- |
+| POST   | `/restaurants`     | Create restaurant | ✅   |
+| GET    | `/restaurants`     | List restaurants  | ✅   |
+| GET    | `/restaurants/:id` | Get restaurant    | ✅   |
+| PATCH  | `/restaurants/:id` | Update restaurant | ✅   |
+| DELETE | `/restaurants/:id` | Delete restaurant | ✅   |
 
 ### Branches
-| Method | Endpoint                                           | Description    | Auth |
-| ------ | -------------------------------------------------- | -------------- | ---- |
-| POST   | `/restaurants/:id/branches`                        | Create branch  | ✅   |
-| GET    | `/restaurants/:id/branches`                        | List branches  | ✅   |
-| GET    | `/restaurants/:id/branches/:branchId`              | Get branch     | ✅   |
-| PATCH  | `/restaurants/:id/branches/:branchId`              | Update branch  | ✅   |
-| DELETE | `/restaurants/:id/branches/:branchId`              | Delete branch  | ✅   |
-| GET    | `/restaurants/:id/branches/:branchId/qrcode`       | Get QR code    | ✅   |
+
+| Method | Endpoint                                     | Description   | Auth |
+| ------ | -------------------------------------------- | ------------- | ---- |
+| POST   | `/restaurants/:id/branches`                  | Create branch | ✅   |
+| GET    | `/restaurants/:id/branches`                  | List branches | ✅   |
+| GET    | `/restaurants/:id/branches/:branchId`        | Get branch    | ✅   |
+| PATCH  | `/restaurants/:id/branches/:branchId`        | Update branch | ✅   |
+| DELETE | `/restaurants/:id/branches/:branchId`        | Delete branch | ✅   |
+| GET    | `/restaurants/:id/branches/:branchId/qrcode` | Get QR code   | ✅   |
 
 ### Menu
-| Method | Endpoint                                               | Description        | Auth |
-| ------ | ------------------------------------------------------ | ------------------ | ---- |
-| POST   | `/restaurants/:id/categories`                          | Create category    | ✅   |
-| GET    | `/restaurants/:id/categories`                          | List categories    | ✅   |
-| POST   | `/restaurants/:id/items`                               | Create item        | ✅   |
-| GET    | `/restaurants/:id/items`                               | List items         | ✅   |
-| PATCH  | `/restaurants/:id/items/:itemId`                       | Update item        | ✅   |
-| GET    | `/menu/:slug`                                          | Public menu        | ❌   |
+
+| Method | Endpoint                         | Description     | Auth |
+| ------ | -------------------------------- | --------------- | ---- |
+| POST   | `/restaurants/:id/categories`    | Create category | ✅   |
+| GET    | `/restaurants/:id/categories`    | List categories | ✅   |
+| POST   | `/restaurants/:id/items`         | Create item     | ✅   |
+| GET    | `/restaurants/:id/items`         | List items      | ✅   |
+| PATCH  | `/restaurants/:id/items/:itemId` | Update item     | ✅   |
+| GET    | `/menu/:slug`                    | Public menu     | ❌   |
 
 ### Orders
-| Method | Endpoint                                               | Description        | Auth |
-| ------ | ------------------------------------------------------ | ------------------ | ---- |
-| POST   | `/orders`                                              | Place order        | ❌   |
-| GET    | `/branches/:branchId/orders`                           | List orders        | ✅   |
-| GET    | `/branches/:branchId/orders/:orderId`                  | Get order          | ✅   |
-| PATCH  | `/branches/:branchId/orders/:orderId/status`           | Update status      | ✅   |
-| PATCH  | `/branches/:branchId/orders/:orderId/payment`          | Update payment     | ✅   |
+
+| Method | Endpoint                                      | Description    | Auth |
+| ------ | --------------------------------------------- | -------------- | ---- |
+| POST   | `/orders`                                     | Place order    | ❌   |
+| GET    | `/branches/:branchId/orders`                  | List orders    | ✅   |
+| GET    | `/branches/:branchId/orders/:orderId`         | Get order      | ✅   |
+| PATCH  | `/branches/:branchId/orders/:orderId/status`  | Update status  | ✅   |
+| PATCH  | `/branches/:branchId/orders/:orderId/payment` | Update payment | ✅   |
 
 ### Staff
-| Method | Endpoint                                    | Description    | Auth |
-| ------ | ------------------------------------------- | -------------- | ---- |
-| POST   | `/branches/:branchId/staff`                 | Invite staff   | ✅   |
-| GET    | `/branches/:branchId/staff`                 | List staff     | ✅   |
-| PATCH  | `/branches/:branchId/staff/:staffId`        | Update staff   | ✅   |
-| DELETE | `/branches/:branchId/staff/:staffId`        | Remove staff   | ✅   |
+
+| Method | Endpoint                             | Description  | Auth |
+| ------ | ------------------------------------ | ------------ | ---- |
+| POST   | `/branches/:branchId/staff`          | Invite staff | ✅   |
+| GET    | `/branches/:branchId/staff`          | List staff   | ✅   |
+| PATCH  | `/branches/:branchId/staff/:staffId` | Update staff | ✅   |
+| DELETE | `/branches/:branchId/staff/:staffId` | Remove staff | ✅   |
 
 ### Analytics
-| Method | Endpoint                                    | Description    | Auth |
-| ------ | ------------------------------------------- | -------------- | ---- |
-| GET    | `/branches/:branchId/analytics`             | Snapshots      | ✅   |
-| GET    | `/branches/:branchId/analytics/live`        | Live stats     | ✅   |
+
+| Method | Endpoint                             | Description | Auth |
+| ------ | ------------------------------------ | ----------- | ---- |
+| GET    | `/branches/:branchId/analytics`      | Snapshots   | ✅   |
+| GET    | `/branches/:branchId/analytics/live` | Live stats  | ✅   |
 
 ### Subscriptions
-| Method | Endpoint                                             | Description      | Auth |
-| ------ | ---------------------------------------------------- | ---------------- | ---- |
-| POST   | `/subscriptions/init`                                | Start checkout   | ✅   |
-| POST   | `/subscriptions/webhook`                             | Paystack webhook | ❌   |
-| GET    | `/restaurants/:id/subscription`                      | Current plan     | ✅   |
-| POST   | `/restaurants/:id/subscription/cancel`               | Cancel plan      | ✅   |
+
+| Method | Endpoint                               | Description      | Auth |
+| ------ | -------------------------------------- | ---------------- | ---- |
+| POST   | `/subscriptions/init`                  | Start checkout   | ✅   |
+| POST   | `/subscriptions/webhook`               | Paystack webhook | ❌   |
+| GET    | `/restaurants/:id/subscription`        | Current plan     | ✅   |
+| POST   | `/restaurants/:id/subscription/cancel` | Cancel plan      | ✅   |
 
 ### Uploads
-| Method | Endpoint           | Description    | Auth |
-| ------ | ------------------ | -------------- | ---- |
-| POST   | `/uploads/image`   | Upload image   | ✅   |
-| DELETE | `/uploads/image`   | Delete image   | ✅   |
+
+| Method | Endpoint         | Description  | Auth |
+| ------ | ---------------- | ------------ | ---- |
+| POST   | `/uploads/image` | Upload image | ✅   |
+| DELETE | `/uploads/image` | Delete image | ✅   |
 
 ## 🔧 Environment Variables
 
 ### API (`apps/api/.env`)
 
-| Variable                | Description                    |
-| ----------------------- | ------------------------------ |
-| `DATABASE_URL`          | PostgreSQL connection string   |
-| `REDIS_HOST/PORT`       | Redis connection               |
-| `JWT_SECRET`            | Access token secret            |
-| `JWT_REFRESH_SECRET`    | Refresh token secret           |
-| `CLOUDINARY_*`          | Cloudinary API credentials     |
-| `PAYSTACK_SECRET_KEY`   | Paystack secret key            |
-| `PAYSTACK_WEBHOOK_SECRET` | Webhook HMAC secret          |
+| Variable                      | Description                                      |
+| ----------------------------- | ------------------------------------------------ |
+| `DATABASE_URL`                | PostgreSQL connection string                     |
+| `REDIS_HOST/PORT`             | Redis connection                                 |
+| `JWT_SECRET`                  | Access token secret                              |
+| `JWT_REFRESH_SECRET`          | Refresh token secret                             |
+| `CLOUDINARY_*`                | Cloudinary API credentials                       |
+| `PAYSTACK_SECRET_KEY`         | Paystack secret key                              |
+| `PAYSTACK_PLAN_CODE_PRO`      | Paystack plan code for the Pro subscription      |
+| `PAYSTACK_PLAN_CODE_BUSINESS` | Paystack plan code for the Business subscription |
+| `PAYSTACK_WEBHOOK_SECRET`     | Webhook HMAC secret                              |
 
 ### Web (`apps/web/.env.local`)
 
-| Variable                  | Description              |
-| ------------------------- | ------------------------ |
-| `NEXT_PUBLIC_API_URL`     | API base URL             |
-| `NEXT_PUBLIC_APP_URL`     | Frontend base URL        |
+| Variable              | Description       |
+| --------------------- | ----------------- |
+| `NEXT_PUBLIC_API_URL` | API base URL      |
+| `NEXT_PUBLIC_APP_URL` | Frontend base URL |
 
 ## 📜 Scripts
 

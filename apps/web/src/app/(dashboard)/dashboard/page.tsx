@@ -3,35 +3,24 @@
 import * as React from 'react';
 import { useAppSelector } from '@/stores/store';
 import { useRestaurant } from '@/hooks/use-restaurant';
-import { 
-  Users, 
-  Store, 
-  TrendingUp, 
-  Clock, 
-  ArrowUpRight, 
+import {
+  Users,
+  Store,
+  TrendingUp,
+  Clock,
+  ArrowUpRight,
   ArrowDownRight,
   ShoppingCart,
-  GitBranch
+  GitBranch,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { motion, useReducedMotion } from 'framer-motion';
 
 export default function DashboardPage() {
   const { user } = useAppSelector((s) => s.auth);
   const { current: restaurant, loading: restaurantsLoading } = useRestaurant();
-  const containerRef = React.useRef(null);
-
-  useGSAP(() => {
-    gsap.from('.dash-reveal', {
-      opacity: 0,
-      y: 20,
-      stagger: 0.1,
-      duration: 0.6,
-      ease: 'power4.out',
-    });
-  }, { scope: containerRef });
+  const reduceMotion = useReducedMotion();
 
   const stats = [
     {
@@ -73,15 +62,32 @@ export default function DashboardPage() {
   ];
 
   const recentOrders = [
-    { id: '1024', customer: 'John Doe', amount: '₵85.00', status: 'In Preparation', time: '5m ago' },
+    {
+      id: '1024',
+      customer: 'John Doe',
+      amount: '₵85.00',
+      status: 'In Preparation',
+      time: '5m ago',
+    },
     { id: '1023', customer: 'Sarah Smith', amount: '₵120.00', status: 'Ready', time: '12m ago' },
-    { id: '1022', customer: 'Mike Johnson', amount: '₵45.50', status: 'Completed', time: '25m ago' },
+    {
+      id: '1022',
+      customer: 'Mike Johnson',
+      amount: '₵45.50',
+      status: 'Completed',
+      time: '25m ago',
+    },
   ];
 
   return (
-    <div ref={containerRef} className="space-y-8">
+    <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="dash-reveal flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div
+        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="flex flex-col justify-between gap-4 md:flex-row md:items-center"
+      >
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Welcome back, {user?.fullName?.split(' ')[0]} 👋
@@ -95,65 +101,90 @@ export default function DashboardPage() {
             <Clock size={16} />
             History
           </Button>
-          <Button className="gap-2 shadow-lg shadow-primary/20">
+          <Button className="shadow-primary/20 gap-2 shadow-lg">
             View Analytics
             <ArrowUpRight size={16} />
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="dash-reveal border-none shadow-sm hover:shadow-md transition-shadow duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color}`}>
-                  <stat.icon size={22} />
-                </div>
-                {stat.trend !== 'neutral' && (
-                  <div className={`flex items-center text-xs font-bold px-2 py-1 rounded-full ${
-                    stat.trend === 'up' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'
-                  }`}>
-                    {stat.trend === 'up' ? <ArrowUpRight size={12} className="mr-1" /> : <ArrowDownRight size={12} className="mr-1" />}
-                    {stat.change}
+          <motion.div
+            key={i}
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: i * 0.04 }}
+          >
+            <Card className="border-none shadow-sm transition-shadow duration-300 hover:shadow-md">
+              <CardContent className="p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className={`rounded-xl p-2.5 ${stat.bg} ${stat.color}`}>
+                    <stat.icon size={22} />
                   </div>
-                )}
-              </div>
-              <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">{stat.value}</h3>
-            </CardContent>
-          </Card>
+                  {stat.trend !== 'neutral' && (
+                    <div
+                      className={`flex items-center rounded-full px-2 py-1 text-xs font-bold ${
+                        stat.trend === 'up'
+                          ? 'bg-emerald-500/10 text-emerald-600'
+                          : 'bg-red-500/10 text-red-600'
+                      }`}
+                    >
+                      {stat.trend === 'up' ? (
+                        <ArrowUpRight size={12} className="mr-1" />
+                      ) : (
+                        <ArrowDownRight size={12} className="mr-1" />
+                      )}
+                      {stat.change}
+                    </div>
+                  )}
+                </div>
+                <p className="text-muted-foreground text-sm font-medium">{stat.title}</p>
+                <h3 className="mt-1 text-2xl font-bold text-foreground">{stat.value}</h3>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Activity */}
-        <Card className="dash-reveal lg:col-span-2 border-none shadow-sm h-full">
-          <CardHeader className="p-6 pb-0 flex flex-row items-center justify-between">
+        <Card className="h-full border-none shadow-sm lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between p-6 pb-0">
             <CardTitle className="text-lg font-bold">Recent Orders</CardTitle>
-            <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/5">View All</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary hover:text-primary hover:bg-primary/5"
+            >
+              View All
+            </Button>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-6">
               {recentOrders.map((order, i) => (
-                <div key={i} className="flex items-center justify-between group cursor-pointer">
+                <div key={i} className="group flex cursor-pointer items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-bold group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                    <div className="group-hover:bg-primary/10 group-hover:text-primary flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-bold transition-colors">
                       #{order.id}
                     </div>
                     <div>
                       <p className="text-sm font-bold text-foreground">{order.customer}</p>
-                      <p className="text-xs text-muted-foreground font-medium">{order.time}</p>
+                      <p className="text-muted-foreground text-xs font-medium">{order.time}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-foreground">{order.amount}</p>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                      order.status === 'Ready' ? 'bg-emerald-500/10 text-emerald-600' : 
-                      order.status === 'In Preparation' ? 'bg-orange-500/10 text-orange-600' : 
-                      'bg-muted text-muted-foreground'
-                    }`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                        order.status === 'Ready'
+                          ? 'bg-emerald-500/10 text-emerald-600'
+                          : order.status === 'In Preparation'
+                            ? 'bg-orange-500/10 text-orange-600'
+                            : 'text-muted-foreground bg-muted'
+                      }`}
+                    >
                       {order.status}
                     </span>
                   </div>
@@ -164,15 +195,15 @@ export default function DashboardPage() {
         </Card>
 
         {/* Quick Actions / Tips */}
-        <Card className="dash-reveal border-none shadow-sm bg-primary/5 border border-primary/10">
+        <Card className="bg-primary/5 border-primary/10 border border-none shadow-sm">
           <CardHeader className="p-6">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg font-bold">
               <Store className="text-primary" size={20} />
               Quick Setup
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-4">
-            <p className="text-sm text-foreground/80 font-medium">
+          <CardContent className="space-y-4 p-6 pt-0">
+            <p className="text-sm font-medium text-foreground/80">
               Complete these steps to start taking orders from customers.
             </p>
             <div className="space-y-3">
@@ -182,19 +213,28 @@ export default function DashboardPage() {
                 { label: 'Setup payment methods', done: false },
                 { label: 'Verify your business phone', done: false },
               ].map((step, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-background/50 border border-border/50">
-                  <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                    step.done ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30'
-                  }`}>
+                <div
+                  key={i}
+                  className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/50 p-3"
+                >
+                  <div
+                    className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                      step.done
+                        ? 'bg-primary border-primary text-primary-foreground'
+                        : 'border-muted-foreground/30'
+                    }`}
+                  >
                     {step.done && <ArrowUpRight size={12} className="rotate-45" />}
                   </div>
-                  <span className={`text-xs font-bold ${step.done ? 'text-foreground/50 line-through' : 'text-foreground'}`}>
+                  <span
+                    className={`text-xs font-bold ${step.done ? 'text-foreground/50 line-through' : 'text-foreground'}`}
+                  >
                     {step.label}
                   </span>
                 </div>
               ))}
             </div>
-            <Button className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground mt-4 w-full py-6 font-bold">
               Complete Setup
             </Button>
           </CardContent>

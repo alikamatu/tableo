@@ -40,6 +40,7 @@ import { Alert, useAlert } from '@/components/ui/Alert';
 import { Divider } from '@/components/ui/Divider';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { refreshSession } from '@/stores/authSlice';
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 
@@ -955,6 +956,7 @@ const PHASES = [
 
 function StepDone() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { draft } = useAppSelector((s) => s.onboarding);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -962,14 +964,20 @@ function StepDone() {
   const [done, setDone] = React.useState(false);
 
   useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    PHASES.forEach((_, i) => {
-      timers.push(setTimeout(() => setPhase(i + 1), (i + 1) * 1500));
-    });
-    timers.push(setTimeout(() => setDone(true), PHASES.length * 1500 + 800));
-    timers.push(setTimeout(() => router.replace('/subscription'), PHASES.length * 1500 + 3500));
+    const timers: NodeJS.Timeout[] = [];
+
+    timers.push(
+      setTimeout(
+        async () => {
+          // Refresh session to update the refresh_token cookie with onboardComplete: true
+          await dispatch(refreshSession());
+          router.replace('/subscription');
+        },
+        PHASES.length * 1500 + 3500,
+      ),
+    );
     return () => timers.forEach(clearTimeout);
-  }, [router]);
+  }, [router, dispatch]);
 
   useEffect(() => {
     if (containerRef.current) {

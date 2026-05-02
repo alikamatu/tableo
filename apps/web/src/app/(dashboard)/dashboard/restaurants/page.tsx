@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { gsap } from 'gsap';
 import {
   Store,
@@ -24,10 +24,14 @@ import {
   Building2,
   Banknote,
   Upload,
+  User,
+  ShieldCheck,
+  Settings2,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAppDispatch, useAppSelector } from '@/stores/store';
 import {
@@ -42,6 +46,7 @@ import { Alert, useAlert } from '@/components/ui/Alert';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
+import toast from 'react-hot-toast';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -127,6 +132,17 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+// ─── Tabs Configuration ───────────────────────────────────────────────────────
+
+const TABS = [
+  { id: 'identity', label: 'Identity', icon: Store, desc: 'Brand name, logo and tagline' },
+  { id: 'contact', label: 'Contact', icon: Globe, desc: 'Phone, email and website' },
+  { id: 'social', label: 'Social', icon: Instagram, desc: 'Social media handles' },
+  { id: 'location', label: 'Location', icon: MapPin, desc: 'Physical address and hours' },
+  { id: 'payment', label: 'Payments', icon: CreditCard, desc: 'Paystack and banking' },
+  { id: 'subscription', label: 'Subscription', icon: ShieldCheck, desc: 'Plan and features' },
+];
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RestaurantsPage() {
@@ -143,15 +159,18 @@ export default function RestaurantsPage() {
     if (!restaurant) return;
     gsap.fromTo(
       pageRef.current,
-      { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' },
+      { opacity: 0, scale: 0.98, y: 10 },
+      { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: 'expo.out' },
     );
   }, [!!restaurant]);
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 size={22} className="animate-spin text-brand" />
+      <div className="flex min-h-[70vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={32} className="animate-spin text-brand" />
+          <p className="text-sm font-medium text-muted">Preparing your dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -159,21 +178,42 @@ export default function RestaurantsPage() {
   if (!restaurant) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <Store size={32} className="text-muted" />
-        <p className="text-sm font-medium text-fg">No restaurant found</p>
-        <p className="max-w-xs text-sm text-muted">
-          Complete onboarding to set up your restaurant profile.
-        </p>
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/20 text-muted">
+          <Store size={32} />
+        </div>
+        <div className="space-y-1">
+          <p className="text-lg font-bold text-fg">No restaurant found</p>
+          <p className="max-w-xs text-sm text-muted">
+            Complete onboarding to set up your restaurant profile and start taking orders.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div ref={pageRef}>
-      <PageHeader
-        title="Restaurant"
-        description="Manage your restaurant profile, contact info, and payment settings."
-      />
+    <div ref={pageRef} className="space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <PageHeader
+          title="Restaurant Settings"
+          description="Refine your brand, manage operations, and configure payments."
+        />
+        <div className="hidden gap-2 sm:flex">
+          <Badge
+            variant="outline"
+            className="h-8 px-3 text-[10px] font-black uppercase tracking-wider"
+          >
+            Status: {restaurant.subStatus}
+          </Badge>
+          <Badge
+            variant="primary"
+            className="h-8 px-3 text-[10px] font-black uppercase tracking-wider"
+          >
+            {restaurant.plan} Plan
+          </Badge>
+        </div>
+      </div>
+
       <RestaurantEditor restaurant={restaurant} saving={saving} />
     </div>
   );
@@ -184,7 +224,7 @@ export default function RestaurantsPage() {
 function RestaurantEditor({ restaurant, saving }: { restaurant: Restaurant; saving: boolean }) {
   const dispatch = useAppDispatch();
   const { show, node: alertNode } = useAlert();
-  const [expandedSection, setExpandedSection] = React.useState<string | null>('identity');
+  const [activeTab, setActiveTab] = useState('identity');
   const [showSecretKey, setShowSecretKey] = React.useState(false);
   const [logoUploading, setLogoUploading] = React.useState(false);
   const [coverUploading, setCoverUploading] = React.useState(false);
@@ -244,10 +284,8 @@ function RestaurantEditor({ restaurant, saving }: { restaurant: Restaurant; savi
         cuisine: cuisineList,
         openingHours: hours,
       };
-      // Don't send empty secret key — would overwrite with blank
       if (!payload.paystackSecretKey) delete payload.paystackSecretKey;
 
-      // Convert empty strings to null for optional formatted fields to bypass backend validation
       const nullableFields: (keyof typeof payload)[] = [
         'tagline',
         'description',
@@ -273,23 +311,20 @@ function RestaurantEditor({ restaurant, saving }: { restaurant: Restaurant; savi
         }
       }
 
-      // These fields cannot be null in the DB, fallback to defaults if empty
       if (payload.currency === '') payload.currency = 'GHS';
       if (payload.country === '') payload.country = 'Ghana';
 
       const result = await dispatch(updateRestaurant(payload));
       if (updateRestaurant.fulfilled.match(result)) {
-        show('success', 'Restaurant updated successfully.');
-        reset(values); // reset dirty state
+        toast.success('Restaurant updated successfully.');
+        reset(values);
       } else {
         const err = result.payload as { message: string } | undefined;
-        show('error', err?.message ?? 'Failed to save changes. Please try again.');
+        toast.error(err?.message ?? 'Failed to save changes.');
       }
     },
-    [dispatch, restaurant.id, cuisineList, hours, show, reset],
+    [dispatch, restaurant.id, cuisineList, hours, reset],
   );
-
-  const toggleSection = (id: string) => setExpandedSection((prev) => (prev === id ? null : id));
 
   const toggleCuisine = (c: string) =>
     setCuisineList((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
@@ -303,629 +338,591 @@ function RestaurantEditor({ restaurant, saving }: { restaurant: Restaurant; savi
   const menuUrl = `https://tableo.app/menu/${restaurant.slug}`;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-3">
-      {/* Sticky save bar */}
-      {(isDirty || cuisineList.join() !== (restaurant.cuisine ?? []).join()) && (
-        <StickyBar
-          saving={saving}
-          onDiscard={() => {
-            reset();
-            setCuisineList(restaurant.cuisine ?? []);
-            setHours(restaurant.openingHours ?? hours);
-          }}
-        />
-      )}
-
-      {alertNode}
-
-      {/* ── Hero card: logo + name + plan ───────────────────────────── */}
-      <HeroCard restaurant={restaurant} />
-
-      {/* ── Sections ───────────────────────────────────────────────── */}
-
-      <Section
-        id="identity"
-        title="Identity"
-        icon={Store}
-        expanded={expandedSection === 'identity'}
-        onToggle={() => toggleSection('identity')}
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FieldInput
-              label="Restaurant name *"
-              error={errors.name?.message}
-              {...register('name')}
-            />
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-fg">Menu URL slug *</label>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted">
-                  /menu/
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+      {/* Sidebar Navigation */}
+      <aside className="lg:col-span-3">
+        <div className="sticky top-24 space-y-1">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'group flex w-full flex-col items-start gap-0.5 rounded-xl px-4 py-3 text-left transition-all duration-200',
+                  isActive
+                    ? 'bg-brand text-white shadow-lg shadow-brand/20'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon
+                    size={18}
+                    className={cn(
+                      isActive ? 'text-white' : 'text-muted-foreground group-hover:text-brand',
+                    )}
+                  />
+                  <span className="text-sm font-bold tracking-tight">{tab.label}</span>
+                </div>
+                <span
+                  className={cn(
+                    'ml-7 text-[10px] font-medium leading-tight opacity-70',
+                    isActive ? 'text-white/80' : 'text-muted-foreground',
+                  )}
+                >
+                  {tab.desc}
                 </span>
-                <input
-                  className={cn(
-                    'h-10 w-full rounded-md bg-subtle pl-14 pr-3 text-sm text-fg',
-                    'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40',
-                    errors.slug && 'ring-2 ring-danger/50',
-                  )}
-                  {...register('slug')}
-                />
-              </div>
-              {errors.slug && <p className="text-xs text-danger">{errors.slug.message}</p>}
-              <div className="mt-1 flex items-center gap-2">
-                <a
-                  href={menuUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-brand hover:underline"
-                >
-                  {menuUrl} <ExternalLink size={10} />
-                </a>
-                <CopyButton text={menuUrl} />
-              </div>
-            </div>
-          </div>
-
-          <FieldInput
-            label="Tagline"
-            placeholder="A short one-liner shown on your menu page"
-            error={errors.tagline?.message}
-            {...register('tagline')}
-          />
-
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg">Description</label>
-            <textarea
-              className="h-24 w-full resize-none rounded-md bg-subtle px-3 py-2.5 text-sm text-fg outline-none transition-all placeholder:text-muted focus:bg-surface focus:ring-2 focus:ring-brand/40"
-              placeholder="What makes your restaurant special?"
-              {...register('description')}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Logo upload */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-fg">Logo</label>
-              <div
-                className="relative flex h-24 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-border text-muted transition-colors hover:border-brand/40 hover:text-brand"
-                onClick={() => document.getElementById('logo-upload')?.click()}
-              >
-                {logoUploading ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin text-brand" />
-                    <span className="text-xs">Uploading…</span>
-                  </>
-                ) : watch('logoUrl') ? (
-                  <img
-                    src={watch('logoUrl')}
-                    alt="logo"
-                    className="h-16 w-16 rounded-lg object-contain"
-                  />
-                ) : (
-                  <>
-                    <Upload size={20} />
-                    <span className="text-xs">Upload logo</span>
-                  </>
-                )}
-                <input
-                  id="logo-upload"
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.webp,.gif,.heic,.heif,.svg,.tiff,.bmp,.avif"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setLogoUploading(true);
-                    try {
-                      const fd = new FormData();
-                      fd.append('file', file);
-                      fd.append('folder', 'tableo/logos');
-                      const res = await api.post('/uploads/image', fd, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                      });
-                      const url = res.data?.url || res.data?.data?.url;
-                      if (url) {
-                        setValue('logoUrl', url, { shouldDirty: true });
-                      }
-                    } catch {
-                      show('error', 'Logo upload failed. Try again.');
-                    } finally {
-                      setLogoUploading(false);
-                    }
-                  }}
-                />
-              </div>
-              {watch('logoUrl') && (
-                <button
-                  type="button"
-                  onClick={() => setValue('logoUrl', '', { shouldDirty: true })}
-                  className="text-xs text-danger hover:underline"
-                >
-                  Remove logo
-                </button>
-              )}
-            </div>
-
-            {/* Cover upload */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-fg">Cover image</label>
-              <div
-                className="relative flex h-24 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-border text-muted transition-colors hover:border-brand/40 hover:text-brand"
-                onClick={() => document.getElementById('cover-upload')?.click()}
-              >
-                {coverUploading ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin text-brand" />
-                    <span className="text-xs">Uploading…</span>
-                  </>
-                ) : watch('coverUrl') ? (
-                  <img
-                    src={watch('coverUrl')}
-                    alt="cover"
-                    className="h-16 w-16 rounded-lg object-cover"
-                  />
-                ) : (
-                  <>
-                    <Upload size={20} />
-                    <span className="text-xs">Upload cover</span>
-                  </>
-                )}
-                <input
-                  id="cover-upload"
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.webp,.gif,.heic,.heif,.svg,.tiff,.bmp,.avif"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setCoverUploading(true);
-                    try {
-                      const fd = new FormData();
-                      fd.append('file', file);
-                      fd.append('folder', 'tableo/covers');
-                      const res = await api.post('/uploads/image', fd, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                      });
-                      const url = res.data?.url || res.data?.data?.url;
-                      if (url) {
-                        setValue('coverUrl', url, { shouldDirty: true });
-                      }
-                    } catch {
-                      show('error', 'Cover upload failed. Try again.');
-                    } finally {
-                      setCoverUploading(false);
-                    }
-                  }}
-                />
-              </div>
-              {watch('coverUrl') && (
-                <button
-                  type="button"
-                  onClick={() => setValue('coverUrl', '', { shouldDirty: true })}
-                  className="text-xs text-danger hover:underline"
-                >
-                  Remove cover
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Cuisine */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-fg">Cuisine type</label>
-            <div className="flex flex-wrap gap-2">
-              {CUISINE_OPTIONS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => toggleCuisine(c)}
-                  className={cn(
-                    'rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150',
-                    cuisineList.includes(c)
-                      ? 'bg-brand text-white'
-                      : 'bg-subtle text-muted hover:text-fg',
-                  )}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
+              </button>
+            );
+          })}
         </div>
-      </Section>
+      </aside>
 
-      <Section
-        id="contact"
-        title="Contact & website"
-        icon={Globe}
-        expanded={expandedSection === 'contact'}
-        onToggle={() => toggleSection('contact')}
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FieldInput
-            label="Phone"
-            type="tel"
-            placeholder="+233 20 000 0000"
-            startIcon={<Phone size={14} />}
-            error={errors.phone?.message}
-            {...register('phone')}
-          />
-          <FieldInput
-            label="Email"
-            type="email"
-            placeholder="info@yourrestaurant.com"
-            startIcon={<Mail size={14} />}
-            error={errors.email?.message}
-            {...register('email')}
-          />
-          <div className="sm:col-span-2">
-            <FieldInput
-              label="Website"
-              type="url"
-              placeholder="https://yourrestaurant.com"
-              startIcon={<Globe size={14} />}
-              error={errors.website?.message}
-              {...register('website')}
-            />
-          </div>
-        </div>
-      </Section>
+      {/* Main Content Area */}
+      <main className="lg:col-span-9">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="space-y-6"
+            >
+              {/* Identity Section */}
+              {activeTab === 'identity' && (
+                <div className="space-y-6">
+                  <HeroCard restaurant={restaurant} />
 
-      <Section
-        id="social"
-        title="Social media"
-        icon={Instagram}
-        expanded={expandedSection === 'social'}
-        onToggle={() => toggleSection('social')}
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FieldInput
-            label="Instagram"
-            placeholder="yourrestaurant"
-            startIcon={<Instagram size={14} />}
-            hint="Without the @"
-            error={errors.instagramHandle?.message}
-            {...register('instagramHandle')}
-          />
-          <FieldInput
-            label="X / Twitter"
-            placeholder="yourrestaurant"
-            startIcon={<Twitter size={14} />}
-            hint="Without the @"
-            error={errors.twitterHandle?.message}
-            {...register('twitterHandle')}
-          />
-          <FieldInput
-            label="Facebook"
-            placeholder="yourrestaurantpage"
-            startIcon={<Facebook size={14} />}
-            hint="Page name or full URL"
-            error={errors.facebookHandle?.message}
-            {...register('facebookHandle')}
-          />
-          <FieldInput
-            label="TikTok"
-            placeholder="yourrestaurant"
-            startIcon={
-              <svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor">
-                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z" />
-              </svg>
-            }
-            hint="Without the @"
-            error={errors.tiktokHandle?.message}
-            {...register('tiktokHandle')}
-          />
-        </div>
-      </Section>
+                  <GlassCard title="Brand Identity" icon={Store}>
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <FieldInput
+                        label="Restaurant name *"
+                        error={errors.name?.message}
+                        {...register('name')}
+                      />
+                      <div className="space-y-1.5">
+                        <label className="text-muted-foreground block text-xs font-black uppercase tracking-widest">
+                          Menu URL slug *
+                        </label>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted">
+                            /menu/
+                          </span>
+                          <input
+                            className={cn(
+                              'h-11 w-full rounded-xl border border-border/50 bg-muted/30 pl-14 pr-3 text-sm font-medium text-fg',
+                              'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40',
+                              errors.slug && 'ring-2 ring-danger/50',
+                            )}
+                            {...register('slug')}
+                          />
+                        </div>
+                        <div className="mt-2 flex items-center gap-3 px-1">
+                          <a
+                            href={menuUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] font-black uppercase tracking-wider text-brand hover:underline"
+                          >
+                            Open Menu <ExternalLink size={10} className="ml-1 inline" />
+                          </a>
+                          <CopyButton text={menuUrl} />
+                        </div>
+                      </div>
+                    </div>
 
-      <Section
-        id="location"
-        title="Location & hours"
-        icon={MapPin}
-        expanded={expandedSection === 'location'}
-        onToggle={() => toggleSection('location')}
-      >
-        <div className="space-y-4">
-          <FieldInput
-            label="Street address"
-            placeholder="123 Oxford Street, Osu"
-            startIcon={<MapPin size={14} />}
-            {...register('address')}
-          />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <FieldInput label="City" placeholder="Accra" {...register('city')} />
-            <FieldInput label="Country" placeholder="Ghana" {...register('country')} />
-            <FieldInput
-              label="Currency"
-              placeholder="GHS"
-              hint="3-letter ISO code"
-              error={errors.currency?.message}
-              {...register('currency')}
-            />
-          </div>
-
-          {/* Opening hours */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Clock size={14} className="text-muted" />
-              <label className="text-sm font-medium text-fg">Opening hours</label>
-            </div>
-            <div className="divide-y divide-border overflow-hidden rounded-xl bg-subtle">
-              {DAYS.map((day) => {
-                const h = hours[day] ?? { open: '08:00', close: '22:00', closed: false };
-                return (
-                  <div key={day} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="w-9 flex-shrink-0 text-xs font-medium text-fg">
-                      {DAY_LABELS[day]?.slice(0, 3)}
-                    </span>
-                    {h.closed ? (
-                      <span className="flex-1 text-xs text-muted">Closed</span>
-                    ) : (
-                      <div className="flex flex-1 items-center gap-2">
-                        <input
-                          type="time"
-                          value={h.open}
-                          onChange={(e) => updateHours(day, 'open', e.target.value)}
-                          className="h-7 rounded-md bg-bg px-2 text-xs text-fg outline-none focus:ring-1 focus:ring-brand/40"
-                        />
-                        <span className="text-xs text-muted">–</span>
-                        <input
-                          type="time"
-                          value={h.close}
-                          onChange={(e) => updateHours(day, 'close', e.target.value)}
-                          className="h-7 rounded-md bg-bg px-2 text-xs text-fg outline-none focus:ring-1 focus:ring-brand/40"
+                    <div className="mt-6 space-y-6">
+                      <FieldInput
+                        label="Tagline"
+                        placeholder="A short one-liner for your menu page"
+                        error={errors.tagline?.message}
+                        {...register('tagline')}
+                      />
+                      <div className="space-y-1.5">
+                        <label className="text-muted-foreground block text-xs font-black uppercase tracking-widest">
+                          Description
+                        </label>
+                        <textarea
+                          className="h-32 w-full resize-none rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-sm font-medium text-fg outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40"
+                          placeholder="Tell your story..."
+                          {...register('description')}
                         />
                       </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => updateHours(day, 'closed', !h.closed)}
-                      className={cn(
-                        'flex-shrink-0 rounded-full px-2 py-0.5 text-2xs transition-colors',
-                        h.closed ? 'bg-danger/10 text-danger' : 'bg-bg text-muted hover:text-fg',
-                      )}
-                    >
-                      {h.closed ? 'Open' : 'Close'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </Section>
+                    </div>
+                  </GlassCard>
 
-      <Section
-        id="payment"
-        title="Paystack & payments"
-        icon={CreditCard}
-        expanded={expandedSection === 'payment'}
-        onToggle={() => toggleSection('payment')}
-      >
-        <div className="space-y-4">
-          <Alert
-            variant="info"
-            message="Your secret key is stored encrypted and never returned in API responses. Enter it only when you want to update it."
-          />
+                  <GlassCard title="Visuals" icon={Upload}>
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      {/* Logo Upload */}
+                      <div className="space-y-3">
+                        <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                          Logo
+                        </p>
+                        <div
+                          onClick={() => document.getElementById('logo-upload')?.click()}
+                          className="group relative flex aspect-square w-32 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-border transition-all hover:border-brand/50 hover:bg-brand/5"
+                        >
+                          {logoUploading ? (
+                            <Loader2 size={24} className="animate-spin text-brand" />
+                          ) : watch('logoUrl') ? (
+                            <img
+                              src={watch('logoUrl')}
+                              className="h-full w-full rounded-2xl object-contain p-2"
+                              alt="logo"
+                            />
+                          ) : (
+                            <div className="text-muted-foreground flex flex-col items-center gap-2 group-hover:text-brand">
+                              <Upload size={20} />
+                              <span className="text-[10px] font-bold">UPLOAD</span>
+                            </div>
+                          )}
+                          <input
+                            id="logo-upload"
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => handleUpload(e, 'logos', 'logoUrl')}
+                          />
+                        </div>
+                      </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FieldInput
-              label="Public key"
-              placeholder="pk_test_…"
-              startIcon={<CreditCard size={14} />}
-              error={errors.paystackPublicKey?.message}
-              hint={restaurant.paystackPublicKey ? '✓ Set' : 'Not set'}
-              {...register('paystackPublicKey')}
-            />
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-fg">Secret key</label>
-                <button
-                  type="button"
-                  onClick={() => setShowSecretKey((p) => !p)}
-                  className="text-xs text-muted transition-colors hover:text-fg"
-                >
-                  {showSecretKey ? 'Hide' : 'Show'}
-                </button>
-              </div>
-              <input
-                type={showSecretKey ? 'text' : 'password'}
-                placeholder="sk_test_… (leave blank to keep current)"
-                className={cn(
-                  'h-10 w-full rounded-md bg-subtle px-3 text-sm text-fg placeholder:text-muted',
-                  'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40',
-                  errors.paystackSecretKey && 'ring-2 ring-danger/50',
-                )}
-                {...register('paystackSecretKey')}
-              />
-              {errors.paystackSecretKey && (
-                <p className="text-xs text-danger">{errors.paystackSecretKey.message}</p>
+                      {/* Cover Upload */}
+                      <div className="space-y-3">
+                        <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                          Cover Image
+                        </p>
+                        <div
+                          onClick={() => document.getElementById('cover-upload')?.click()}
+                          className="group relative flex h-32 w-full cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-border transition-all hover:border-brand/50 hover:bg-brand/5"
+                        >
+                          {coverUploading ? (
+                            <Loader2 size={24} className="animate-spin text-brand" />
+                          ) : watch('coverUrl') ? (
+                            <img
+                              src={watch('coverUrl')}
+                              className="h-full w-full rounded-2xl object-cover"
+                              alt="cover"
+                            />
+                          ) : (
+                            <div className="text-muted-foreground flex flex-col items-center gap-2 group-hover:text-brand">
+                              <Upload size={20} />
+                              <span className="text-[10px] font-bold">UPLOAD COVER</span>
+                            </div>
+                          )}
+                          <input
+                            id="cover-upload"
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => handleUpload(e, 'covers', 'coverUrl')}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
+
+                  <GlassCard title="Cuisine" icon={Store}>
+                    <div className="flex flex-wrap gap-2">
+                      {CUISINE_OPTIONS.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => toggleCuisine(c)}
+                          className={cn(
+                            'rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200',
+                            cuisineList.includes(c)
+                              ? 'translate-y-[-1px] bg-brand text-white shadow-md shadow-brand/20'
+                              : 'text-muted-foreground bg-muted/50 hover:bg-muted hover:text-foreground',
+                          )}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </GlassCard>
+                </div>
               )}
-              <p className="text-xs text-muted">
-                {restaurant.paystackPublicKey ? '✓ Secret key is set' : 'Not configured'}
-              </p>
-            </div>
+
+              {/* Contact Tab */}
+              {activeTab === 'contact' && (
+                <GlassCard title="Contact Information" icon={Globe}>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <FieldInput
+                      label="Phone"
+                      type="tel"
+                      placeholder="+233..."
+                      startIcon={<Phone size={16} />}
+                      {...register('phone')}
+                    />
+                    <FieldInput
+                      label="Email"
+                      type="email"
+                      placeholder="hello@restaurant.com"
+                      startIcon={<Mail size={16} />}
+                      {...register('email')}
+                    />
+                    <div className="sm:col-span-2">
+                      <FieldInput
+                        label="Website"
+                        type="url"
+                        placeholder="https://..."
+                        startIcon={<Globe size={16} />}
+                        {...register('website')}
+                      />
+                    </div>
+                  </div>
+                </GlassCard>
+              )}
+
+              {/* Social Tab */}
+              {activeTab === 'social' && (
+                <GlassCard title="Social Presence" icon={Instagram}>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <FieldInput
+                      label="Instagram"
+                      placeholder="username"
+                      startIcon={<Instagram size={16} />}
+                      hint="Handle without @"
+                      {...register('instagramHandle')}
+                    />
+                    <FieldInput
+                      label="Twitter / X"
+                      placeholder="username"
+                      startIcon={<Twitter size={16} />}
+                      hint="Handle without @"
+                      {...register('twitterHandle')}
+                    />
+                    <FieldInput
+                      label="Facebook"
+                      placeholder="page_name"
+                      startIcon={<Facebook size={16} />}
+                      {...register('facebookHandle')}
+                    />
+                    <FieldInput
+                      label="TikTok"
+                      placeholder="username"
+                      startIcon={<Building2 size={16} />}
+                      {...register('tiktokHandle')}
+                    />
+                  </div>
+                </GlassCard>
+              )}
+
+              {/* Location Tab */}
+              {activeTab === 'location' && (
+                <div className="space-y-6">
+                  <GlassCard title="Physical Address" icon={MapPin}>
+                    <div className="space-y-6">
+                      <FieldInput
+                        label="Street Address"
+                        placeholder="123 Osu, Accra..."
+                        startIcon={<MapPin size={16} />}
+                        {...register('address')}
+                      />
+                      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                        <FieldInput label="City" placeholder="Accra" {...register('city')} />
+                        <FieldInput label="Country" placeholder="Ghana" {...register('country')} />
+                        <FieldInput label="Currency" placeholder="GHS" {...register('currency')} />
+                      </div>
+                    </div>
+                  </GlassCard>
+
+                  <GlassCard title="Operating Hours" icon={Clock}>
+                    <div className="divide-y divide-border/30 overflow-hidden rounded-2xl border border-border/50 bg-muted/20">
+                      {DAYS.map((day) => {
+                        const h = hours[day] || { open: '08:00', close: '22:00', closed: false };
+                        return (
+                          <div key={day} className="flex items-center justify-between px-5 py-4">
+                            <span className="text-muted-foreground w-12 text-xs font-black uppercase tracking-wider">
+                              {day}
+                            </span>
+                            {h.closed ? (
+                              <span className="text-[10px] font-black uppercase text-danger/60">
+                                Closed for business
+                              </span>
+                            ) : (
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="time"
+                                  value={h.open}
+                                  onChange={(e) => updateHours(day, 'open', e.target.value)}
+                                  className="h-9 w-24 rounded-lg border border-border/50 bg-surface px-3 text-xs font-bold"
+                                />
+                                <span className="text-xs text-muted">to</span>
+                                <input
+                                  type="time"
+                                  value={h.close}
+                                  onChange={(e) => updateHours(day, 'close', e.target.value)}
+                                  className="h-9 w-24 rounded-lg border border-border/50 bg-surface px-3 text-xs font-bold"
+                                />
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => updateHours(day, 'closed', !h.closed)}
+                              className={cn(
+                                'h-8 rounded-lg px-4 text-[10px] font-black uppercase tracking-widest transition-all',
+                                h.closed
+                                  ? 'text-success-foreground bg-success'
+                                  : 'text-muted-foreground bg-muted',
+                              )}
+                            >
+                              {h.closed ? 'Open' : 'Close'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </GlassCard>
+                </div>
+              )}
+
+              {/* Payments Tab */}
+              {activeTab === 'payment' && (
+                <div className="space-y-6">
+                  <GlassCard title="Paystack Integration" icon={CreditCard}>
+                    <Alert
+                      variant="info"
+                      message="Keys are encrypted. Only enter if you wish to update."
+                      className="mb-6"
+                    />
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <FieldInput
+                        label="Public Key"
+                        placeholder="pk_test_..."
+                        startIcon={<CreditCard size={16} />}
+                        {...register('paystackPublicKey')}
+                      />
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+                            Secret Key
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowSecretKey(!showSecretKey)}
+                            className="text-[10px] font-bold uppercase text-brand underline"
+                          >
+                            {showSecretKey ? 'Hide' : 'Reveal'}
+                          </button>
+                        </div>
+                        <input
+                          type={showSecretKey ? 'text' : 'password'}
+                          placeholder="sk_test_..."
+                          className="h-11 w-full rounded-xl border border-border/50 bg-muted/30 px-4 text-sm font-medium outline-none focus:ring-2 focus:ring-brand/40"
+                          {...register('paystackSecretKey')}
+                        />
+                      </div>
+                    </div>
+                  </GlassCard>
+
+                  <GlassCard title="Payout Settings" icon={Banknote}>
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                      <div className="space-y-1.5">
+                        <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+                          Type
+                        </label>
+                        <select
+                          className="h-11 w-full rounded-xl border border-border/50 bg-muted/30 px-3 text-sm font-bold outline-none"
+                          {...register('settlementType')}
+                        >
+                          <option value="">Select</option>
+                          <option value="bank">Bank</option>
+                          <option value="momo">MoMo</option>
+                        </select>
+                      </div>
+                      <FieldInput
+                        label="Provider"
+                        placeholder="GCB / MTN"
+                        {...register('settlementBank')}
+                      />
+                      <FieldInput
+                        label="Account #"
+                        placeholder="020..."
+                        {...register('settlementAccountNumber')}
+                      />
+                    </div>
+                  </GlassCard>
+                </div>
+              )}
+
+              {/* Subscription Tab */}
+              {activeTab === 'subscription' && (
+                <GlassCard title="Plan & Billing" icon={ShieldCheck}>
+                  <SubscriptionPanel restaurant={restaurant} />
+                </GlassCard>
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Bottom Save Action */}
+          <div className="flex items-center justify-end border-t border-border pt-6">
+            <Button
+              type="submit"
+              size="lg"
+              loading={saving}
+              className="h-14 rounded-2xl px-10 text-xs font-black uppercase tracking-widest shadow-xl shadow-brand/20"
+            >
+              <Check size={18} className="mr-2" /> Save Settings
+            </Button>
           </div>
+        </form>
+      </main>
 
-          {/* Settlement */}
-          <div className="space-y-4 border-t border-border pt-4">
-            <div className="flex items-center gap-2">
-              <Banknote size={15} className="text-muted" />
-              <p className="text-sm font-medium text-fg">Settlement account</p>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-fg">Settlement type</label>
-                <select
-                  className="h-10 w-full appearance-none rounded-md bg-subtle px-3 text-sm text-fg outline-none transition-all focus:ring-2 focus:ring-brand/40"
-                  {...register('settlementType')}
-                >
-                  <option value="">Select type</option>
-                  <option value="bank">Bank account</option>
-                  <option value="momo">Mobile money</option>
-                </select>
+      {/* Floating Save Bar */}
+      <AnimatePresence>
+        {isDirty && (
+          <motion.div
+            initial={{ y: 100 }}
+            animate={{ y: 0 }}
+            exit={{ y: 100 }}
+            className="fixed bottom-8 left-1/2 z-50 flex w-[90%] max-w-md -translate-x-1/2 items-center justify-between gap-4 rounded-3xl bg-fg px-6 py-4 text-bg shadow-2xl backdrop-blur-xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/20 text-brand">
+                <AlertCircle size={18} />
               </div>
-              <FieldInput
-                label="Bank / provider"
-                placeholder="e.g. GCB Bank / MTN"
-                error={errors.settlementBank?.message}
-                {...register('settlementBank')}
-              />
-              <FieldInput
-                label="Account number"
-                placeholder="0201234567"
-                error={errors.settlementAccountNumber?.message}
-                {...register('settlementAccountNumber')}
-              />
+              <span className="text-sm font-bold">Unsaved changes</span>
             </div>
-            {restaurant.paystackSubaccountCode && (
-              <div className="flex items-center gap-2 text-xs text-muted">
-                <Check size={12} className="text-success" />
-                Subaccount code:{' '}
-                <code className="font-mono">{restaurant.paystackSubaccountCode}</code>
-              </div>
-            )}
-          </div>
-        </div>
-      </Section>
-
-      {/* Subscription */}
-      <Section
-        id="subscription"
-        title="Subscription"
-        icon={Building2}
-        expanded={expandedSection === 'subscription'}
-        onToggle={() => toggleSection('subscription')}
-      >
-        <SubscriptionPanel restaurant={restaurant} />
-      </Section>
-
-      {/* Save button at bottom */}
-      <div className="pt-2">
-        <Button type="submit" size="lg" loading={saving} className="w-full sm:w-auto">
-          <Check size={16} /> Save changes
-        </Button>
-      </div>
-    </form>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => reset()}
+                className="text-xs font-bold opacity-60 hover:opacity-100"
+              >
+                Discard
+              </button>
+              <Button
+                size="sm"
+                loading={saving}
+                onClick={handleSubmit(onSubmit)}
+                className="h-9 rounded-xl bg-white text-[10px] font-black uppercase tracking-widest text-fg hover:bg-white/90"
+              >
+                Save
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
+
+  async function handleUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    folder: string,
+    field: 'logoUrl' | 'coverUrl',
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (field === 'logoUrl') setLogoUploading(true);
+    else setCoverUploading(true);
+
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', `tableo/${folder}`);
+      const res = await api.post('/uploads/image', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = res.data?.url || res.data?.data?.url;
+      if (url) setValue(field, url, { shouldDirty: true });
+    } catch {
+      toast.error('Upload failed.');
+    } finally {
+      if (field === 'logoUrl') setLogoUploading(false);
+      else setCoverUploading(false);
+    }
+  }
 }
 
-// ─── Hero card ────────────────────────────────────────────────────────────────
+// ─── Sub-components ────────────────────────────────────────────────────────────
 
 function HeroCard({ restaurant }: { restaurant: Restaurant }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-surface">
-      {/* Cover image */}
+    <div className="relative overflow-hidden rounded-3xl border border-border/50 bg-surface shadow-sm">
       <div
-        className="relative h-28 w-full bg-subtle"
-        style={
-          restaurant.coverUrl
-            ? {
-                backgroundImage: `url(${restaurant.coverUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }
-            : {}
-        }
+        className="h-40 w-full bg-muted/20 bg-cover bg-center"
+        style={restaurant.coverUrl ? { backgroundImage: `url(${restaurant.coverUrl})` } : {}}
       >
-        {!restaurant.coverUrl && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Store size={24} className="text-border" />
-          </div>
-        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       </div>
 
-      {/* Logo + info */}
-      <div className="px-5 pb-5">
-        <div className="-mt-8 mb-4 flex items-end gap-4">
-          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-surface bg-bg shadow-sm">
-            {restaurant.logoUrl ? (
-              <img
-                src={restaurant.logoUrl}
-                alt={restaurant.name}
-                className="h-full w-full object-contain"
-              />
-            ) : (
-              <Store size={20} className="text-muted" />
-            )}
+      <div className="relative px-6 pb-6">
+        <div className="-mt-12 flex items-end justify-between">
+          <div className="flex items-end gap-5">
+            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border-[6px] border-surface bg-white shadow-xl shadow-black/10">
+              {restaurant.logoUrl ? (
+                <img
+                  src={restaurant.logoUrl}
+                  className="h-full w-full object-contain p-2"
+                  alt="logo"
+                />
+              ) : (
+                <Store size={32} className="text-muted" />
+              )}
+            </div>
+            <div className="pb-2">
+              <h2 className="text-2xl font-black tracking-tight text-white">{restaurant.name}</h2>
+              <p className="text-xs font-medium text-white/70">@{restaurant.slug}</p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1 pb-1">
-            <h2 className="truncate text-base font-semibold text-fg">{restaurant.name}</h2>
-            <p className="text-xs text-muted">/menu/{restaurant.slug}</p>
+          <div className="pb-2">
+            <Badge
+              variant={planBadge[restaurant.plan] ?? 'muted'}
+              className="h-7 px-4 text-[10px] font-black uppercase tracking-widest"
+            >
+              {restaurant.plan}
+            </Badge>
           </div>
-          <Badge variant={planBadge[restaurant.plan] ?? 'muted'}>{restaurant.plan}</Badge>
         </div>
 
-        {/* Quick stats row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border/50 pt-6">
           {[
-            { label: 'Branches', value: restaurant._count?.branches ?? 0 },
-            { label: 'Menu items', value: restaurant._count?.menuItems ?? 0 },
-            { label: 'Status', value: restaurant.subStatus },
-          ].map(({ label, value }) => (
-            <div key={label} className="rounded-lg bg-subtle px-3 py-2">
-              <p className="text-2xs text-muted">{label}</p>
-              <p className="text-sm font-semibold capitalize text-fg">{value}</p>
+            { label: 'Branches', value: restaurant._count?.branches ?? 0, icon: MapPin },
+            {
+              label: 'Menu Items',
+              value: restaurant._count?.menuItems ?? 0,
+              icon: UtensilsCrossed,
+            },
+            { label: 'Status', value: restaurant.subStatus, icon: ShieldCheck },
+          ].map((stat) => (
+            <div key={stat.label} className="flex flex-col items-center gap-1">
+              <stat.icon size={12} className="text-muted-foreground" />
+              <span className="text-xs font-black capitalize text-fg">{stat.value}</span>
+              <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-tighter">
+                {stat.label}
+              </span>
             </div>
           ))}
         </div>
-
-        {/* Social links row */}
-        {(restaurant.instagramHandle ||
-          restaurant.twitterHandle ||
-          restaurant.facebookHandle ||
-          restaurant.tiktokHandle ||
-          restaurant.website) && (
-          <div className="mt-3 flex items-center gap-3 border-t border-border pt-3">
-            {restaurant.website && (
-              <a
-                href={restaurant.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted transition-colors hover:text-fg"
-              >
-                <Globe size={15} />
-              </a>
-            )}
-            {restaurant.instagramHandle && (
-              <a
-                href={`https://instagram.com/${restaurant.instagramHandle}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted transition-colors hover:text-fg"
-              >
-                <Instagram size={15} />
-              </a>
-            )}
-            {restaurant.twitterHandle && (
-              <a
-                href={`https://x.com/${restaurant.twitterHandle}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted transition-colors hover:text-fg"
-              >
-                <Twitter size={15} />
-              </a>
-            )}
-            {restaurant.facebookHandle && (
-              <a
-                href={`https://facebook.com/${restaurant.facebookHandle}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted transition-colors hover:text-fg"
-              >
-                <Facebook size={15} />
-              </a>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-// ─── Subscription panel ───────────────────────────────────────────────────────
+function GlassCard({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon: any;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-border/50 bg-surface/50 p-6 shadow-sm backdrop-blur-xl transition-all hover:shadow-md">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand">
+          <Icon size={18} />
+        </div>
+        <h3 className="text-sm font-black uppercase tracking-widest text-fg">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 function SubscriptionPanel({ restaurant }: { restaurant: Restaurant }) {
   const features: Record<string, string[]> = {
@@ -940,37 +937,38 @@ function SubscriptionPanel({ restaurant }: { restaurant: Restaurant }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold capitalize text-fg">{restaurant.plan} plan</p>
-          <p className="mt-0.5 text-xs text-muted">
-            Status:{' '}
-            <span
-              className={cn(
-                'font-medium',
-                restaurant.subStatus === 'active' ? 'text-success' : 'text-danger',
-              )}
-            >
+        <div className="space-y-1">
+          <p className="text-lg font-black capitalize text-fg">{restaurant.plan} Plan</p>
+          <div className="flex items-center gap-2">
+            <Badge variant={restaurant.subStatus === 'active' ? 'success' : 'danger'}>
               {restaurant.subStatus}
-            </span>
+            </Badge>
             {restaurant.subExpiresAt && (
-              <span> · Renews {new Date(restaurant.subExpiresAt).toLocaleDateString()}</span>
+              <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
+                Renews {new Date(restaurant.subExpiresAt).toLocaleDateString()}
+              </span>
             )}
-          </p>
+          </div>
         </div>
         {restaurant.plan !== 'business' && (
-          <Button variant="secondary" size="sm">
-            Upgrade plan
+          <Button variant="secondary" className="rounded-xl px-6 font-bold">
+            Upgrade
           </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {(features[restaurant.plan] ?? []).map((f) => (
-          <div key={f} className="flex items-center gap-1.5 text-xs text-muted">
-            <Check size={11} className="flex-shrink-0 text-success" strokeWidth={3} />
-            {f}
+          <div
+            key={f}
+            className="flex items-center gap-3 rounded-2xl border border-border/50 bg-muted/30 p-4"
+          >
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/20 text-success">
+              <Check size={14} strokeWidth={3} />
+            </div>
+            <span className="text-xs font-bold text-fg">{f}</span>
           </div>
         ))}
       </div>
@@ -978,134 +976,45 @@ function SubscriptionPanel({ restaurant }: { restaurant: Restaurant }) {
   );
 }
 
-// ─── Sticky save bar ──────────────────────────────────────────────────────────
-
-function StickyBar({ saving, onDiscard }: { saving: boolean; onDiscard: () => void }) {
-  return (
-    <div className="sticky top-14 z-20 flex items-center justify-between gap-4 rounded-xl bg-fg px-4 py-2.5 text-bg">
-      <div className="flex items-center gap-2 text-sm">
-        <AlertCircle size={14} className="flex-shrink-0 text-warning" />
-        Unsaved changes
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onDiscard}
-          className="text-xs text-bg/60 transition-colors hover:text-bg"
-        >
-          Discard
-        </button>
-        <Button
-          type="submit"
-          size="sm"
-          loading={saving}
-          className="h-7 bg-white px-3 text-xs text-fg hover:bg-white/90"
-        >
-          Save
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Collapsible section ──────────────────────────────────────────────────────
-
-function Section({
-  title,
-  icon: Icon,
-  expanded,
-  onToggle,
-  children,
-}: {
-  id: string;
-  title: string;
-  icon: React.ElementType;
-  expanded: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!bodyRef.current) return;
-    if (expanded) {
-      gsap.fromTo(
-        bodyRef.current,
-        { height: 0, opacity: 0 },
-        { height: 'auto', opacity: 1, duration: 0.3, ease: 'power3.out' },
-      );
-    } else {
-      gsap.to(bodyRef.current, { height: 0, opacity: 0, duration: 0.2, ease: 'power3.in' });
-    }
-  }, [expanded]);
-
-  return (
-    <div className="overflow-hidden rounded-xl bg-surface">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-subtle/40"
-      >
-        <div className="flex items-center gap-3">
-          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand/10">
-            <Icon size={14} className="text-brand" />
-          </span>
-          <span className="text-sm font-medium text-fg">{title}</span>
-        </div>
-        {expanded ? (
-          <ChevronUp size={16} className="text-muted" />
-        ) : (
-          <ChevronDown size={16} className="text-muted" />
-        )}
-      </button>
-
-      <div ref={bodyRef} style={{ height: expanded ? 'auto' : 0, overflow: 'hidden' }}>
-        <div className="px-5 pb-5 pt-1">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Field input (thin wrapper for the raw input — avoids the old Input bugs) ─
-
-interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  hint?: string;
-  startIcon?: React.ReactNode;
-}
-
-const FieldInput = React.forwardRef<HTMLInputElement, FieldProps>(
+const FieldInput = React.forwardRef<HTMLInputElement, any>(
   ({ label, error, hint, startIcon, className, ...props }, ref) => (
-    <div className="space-y-1.5">
-      {label && <label className="block text-sm font-medium text-fg">{label}</label>}
+    <div className="space-y-2">
+      {label && (
+        <label className="text-muted-foreground block px-1 text-xs font-black uppercase tracking-widest">
+          {label}
+        </label>
+      )}
       <div className="relative">
         {startIcon && (
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+          <span className="text-muted-foreground pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 opacity-50">
             {startIcon}
           </span>
         )}
         <input
           ref={ref}
           className={cn(
-            'h-10 w-full rounded-md bg-subtle px-3 text-sm text-fg placeholder:text-muted',
-            'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40',
+            'h-12 w-full rounded-2xl border border-border/50 bg-muted/30 px-4 text-sm font-medium text-fg transition-all placeholder:text-muted/60',
+            'shadow-inner-sm outline-none focus:bg-surface focus:ring-2 focus:ring-brand/40',
             'disabled:cursor-not-allowed disabled:opacity-40',
-            startIcon && 'pl-9',
-            error && 'ring-2 ring-danger/50',
+            startIcon && 'pl-11',
+            error && 'border-danger/20 ring-2 ring-danger/50',
             className,
           )}
           {...props}
         />
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
-      {hint && !error && <p className="text-xs text-muted">{hint}</p>}
+      {error && (
+        <p className="px-1 text-[10px] font-bold uppercase tracking-tighter text-danger">{error}</p>
+      )}
+      {hint && !error && (
+        <p className="text-muted-foreground px-1 text-[10px] font-bold uppercase tracking-tight opacity-70">
+          {hint}
+        </p>
+      )}
     </div>
   ),
 );
 FieldInput.displayName = 'FieldInput';
-
-// ─── Copy button ──────────────────────────────────────────────────────────────
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = React.useState(false);
@@ -1119,10 +1028,29 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={copy}
-      className="text-muted transition-colors hover:text-fg"
-      title="Copy URL"
+      className="text-muted-foreground flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-colors hover:text-fg"
     >
       {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
+      {copied ? 'Copied' : 'Copy link'}
     </button>
+  );
+}
+
+function UtensilsCrossed(props: any) {
+  return (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m3 2 1.41 1.41L12 11l7.59-7.59L21 2" />
+      <path d="m9 9 5.88 5.88" />
+      <path d="M19 15v7" />
+      <path d="M15 19h7" />
+    </svg>
   );
 }
