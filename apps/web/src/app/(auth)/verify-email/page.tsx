@@ -46,51 +46,53 @@ function VerifyEmailContent() {
     <AuthShell heading="Email verification" subheading="">
       {state === 'verifying' && (
         <div className="flex flex-col items-center gap-4 py-6 text-center">
-          <Loader2 size={28} className="text-brand animate-spin" />
+          <Loader2 size={28} className="animate-spin text-brand" />
           <p className="text-sm text-muted">Verifying your email address…</p>
         </div>
       )}
 
       {state === 'success' && (
-        <div className="flex flex-col items-center text-center gap-4 py-2">
-          <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 py-2 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
             <CheckCircle size={22} className="text-success" />
           </div>
           <div>
             <p className="text-sm font-medium text-fg">Email verified!</p>
-            <p className="text-sm text-muted mt-1">Your account is now fully active. Welcome to Tableo.</p>
+            <p className="mt-1 text-sm text-muted">
+              Your account is now fully active. Welcome to Tableo.
+            </p>
           </div>
-          <Button className="w-full mt-2" size="lg" onClick={() => router.push('/restaurants')}>
+          <Button className="mt-2 w-full" size="lg" onClick={() => router.push('/dashboard')}>
             Go to dashboard
           </Button>
         </div>
       )}
 
       {state === 'already_verified' && (
-        <div className="flex flex-col items-center text-center gap-4 py-2">
-          <div className="h-12 w-12 rounded-full bg-brand/10 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 py-2 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/10">
             <CheckCircle size={22} className="text-brand" />
           </div>
           <p className="text-sm text-muted">This email is already verified. You're good to go.</p>
-          <Button className="w-full" size="lg" onClick={() => router.push('/restaurants')}>
+          <Button className="w-full" size="lg" onClick={() => router.push('/dashboard')}>
             Go to dashboard
           </Button>
         </div>
       )}
 
       {state === 'error' && (
-        <div className="flex flex-col items-center text-center gap-5 py-2">
-          <div className="h-12 w-12 rounded-full bg-danger/10 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-5 py-2 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-danger/10">
             <XCircle size={22} className="text-danger" />
           </div>
-          <Alert variant="error" message={errorMsg} className="text-left w-full" />
-          <div className="flex flex-col gap-2 w-full">
+          <Alert variant="error" message={errorMsg} className="w-full text-left" />
+          <div className="flex w-full flex-col gap-2">
             <Button variant="secondary" className="w-full" size="lg" asChild>
               <Link href="/login">Sign in to resend verification</Link>
             </Button>
             <Link
               href="/forgot-password"
-              className="text-xs text-center text-muted hover:text-fg transition-colors"
+              className="text-center text-xs text-muted transition-colors hover:text-fg"
             >
               Having trouble? Contact support
             </Link>

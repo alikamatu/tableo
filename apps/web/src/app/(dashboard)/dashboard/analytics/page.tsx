@@ -1,34 +1,24 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  ShoppingCart, 
-  DollarSign, 
-  TrendingUp, 
-  Clock, 
-  Calendar as CalendarIcon,
-  Loader2
-} from 'lucide-react';
+import { ShoppingCart, DollarSign, TrendingUp, Clock, Loader2, BarChart3 } from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import api from '@/lib/api';
 import { formatGHS } from '@tableo/utils';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
 } from 'recharts';
-import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import * as React from 'react';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
@@ -50,6 +40,19 @@ interface Snapshot {
   totalRevenue: string;
   avgOrderValue: string;
 }
+
+const listParent = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, delayChildren: 0.04 },
+  },
+};
+
+const listItem = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] } },
+};
 
 export default function AnalyticsPage() {
   const { current: branch, loading: branchLoading } = useAppSelector((s) => s.branch);
@@ -83,27 +86,20 @@ export default function AnalyticsPage() {
     load();
   }, [load]);
 
-  useGSAP(() => {
-    if (!loading) {
-      gsap.from('.analytics-reveal', {
-        opacity: 0,
-        y: 10,
-        stagger: 0.05,
-        duration: 0.4,
-        ease: 'power3.out'
-      });
-    }
-  }, [loading]);
-
   if ((restLoading || branchLoading) && !branch) {
     return (
-      <div className="flex items-center justify-center py-32">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="text-primary animate-spin" size={28} strokeWidth={1.75} />
       </div>
     );
   }
 
-  if (!branch) return <div className="text-center py-20 text-muted-foreground font-medium">Select a branch to view statistics.</div>;
+  if (!branch)
+    return (
+      <div className="text-muted-foreground py-16 text-center text-sm">
+        Select a branch to view statistics.
+      </div>
+    );
 
   const hourlyData = Array.from({ length: 24 }, (_, i) => ({
     hour: `${i.toString().padStart(2, '0')}:00`,
@@ -119,158 +115,289 @@ export default function AnalyticsPage() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-card border border-border p-4 rounded-xl shadow-xl">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
-          <p className="text-base font-black text-foreground">{formatGHS(payload[0].value)}</p>
-          {payload[1] && <p className="text-[11px] font-bold text-primary mt-1">{payload[1].value} ORDERS</p>}
+        <div className="bg-card/95 rounded-lg border border-border p-3 shadow-lg backdrop-blur-sm">
+          <p className="text-muted-foreground mb-1 text-xs">{label}</p>
+          <p className="text-sm tabular-nums text-foreground">{formatGHS(payload[0].value)}</p>
+          {payload[1] && (
+            <p className="text-primary mt-1 text-xs tabular-nums">{payload[1].value} orders</p>
+          )}
         </div>
       );
     }
     return null;
   };
 
+  const statCards = [
+    {
+      label: 'Daily orders',
+      val: live?.totalOrders ?? 0,
+      icon: ShoppingCart,
+      iconClass: 'text-primary bg-primary/10',
+    },
+    {
+      label: 'Daily revenue',
+      val: formatGHS(live?.totalRevenue ?? 0),
+      icon: DollarSign,
+      iconClass: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
+    },
+    {
+      label: 'Avg ticket',
+      val: formatGHS(live?.avgOrderValue ?? 0),
+      icon: TrendingUp,
+      iconClass: 'text-sky-600 dark:text-sky-400 bg-sky-500/10',
+    },
+    {
+      label: 'In pipeline',
+      val: live?.statusCounts?.pending ?? 0,
+      icon: Clock,
+      iconClass: 'text-amber-600 dark:text-amber-400 bg-amber-500/10',
+    },
+  ];
+
   return (
-    <div ref={containerRef} className="space-y-8 pb-20">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Business Insights</h1>
-          <p className="text-muted-foreground mt-1 font-medium">Performance tracking and history.</p>
+    <motion.div
+      ref={containerRef}
+      className="mx-auto max-w-6xl space-y-6 pb-20 sm:space-y-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35 }}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="bg-primary/10 text-primary mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+            <BarChart3 size={18} strokeWidth={1.75} />
+          </div>
+          <div>
+            <h1 className="text-lg font-medium tracking-tight text-foreground sm:text-xl">
+              Insights
+            </h1>
+            <p className="text-muted-foreground mt-0.5 text-sm">
+              Live branch performance and history.
+            </p>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-muted border border-border">
-          <Input 
-            type="date" 
-            className="h-8 border-none bg-transparent focus-visible:ring-0 text-xs font-bold" 
+
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-1.5">
+          <Input
+            type="date"
+            className="h-8 border-none bg-transparent text-xs focus-visible:ring-0"
             value={dateRange.from}
-            onValueChange={(v) => setDateRange(d => ({ ...d, from: v }))}
+            onValueChange={(v) => setDateRange((d) => ({ ...d, from: v }))}
           />
-          <div className="text-muted-foreground/30 px-1 font-bold">→</div>
-          <Input 
-            type="date" 
-            className="h-8 border-none bg-transparent focus-visible:ring-0 text-xs font-bold" 
+          <span className="text-muted-foreground/50 text-xs">→</span>
+          <Input
+            type="date"
+            className="h-8 border-none bg-transparent text-xs focus-visible:ring-0"
             value={dateRange.to}
-            onValueChange={(v) => setDateRange(d => ({ ...d, to: v }))}
+            onValueChange={(v) => setDateRange((d) => ({ ...d, to: v }))}
           />
         </div>
       </div>
 
-      {/* ─── Key Metrics ────────────────────────────────────── */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Daily Orders", val: live?.totalOrders ?? 0, icon: ShoppingCart, color: 'primary' },
-          { label: "Daily Revenue", val: formatGHS(live?.totalRevenue ?? 0), icon: DollarSign, color: 'green' },
-          { label: "Avg Ticket", val: formatGHS(live?.avgOrderValue ?? 0), icon: TrendingUp, color: 'blue' },
-          { label: "In Pipeline", val: live?.statusCounts?.pending ?? 0, icon: Clock, color: 'yellow' },
-        ].map((stat, i) => {
+      <motion.div
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        variants={listParent}
+        initial="hidden"
+        animate="show"
+      >
+        {statCards.map((stat, i) => {
           const Icon = stat.icon;
           return (
-            <Card key={i} className="analytics-reveal hover:shadow-md transition-all">
-              <CardContent className="pt-6 px-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={cn("p-2 rounded-xl bg-muted border border-border group-hover:bg-primary/10 transition-colors")}>
-                    <Icon size={18} className={cn(stat.color === 'primary' ? 'text-primary' : `text-${stat.color}-600 dark:text-${stat.color}-400`)} />
+            <motion.div key={i} variants={listItem}>
+              <Card className="bg-card/50 border-border/80 transition-shadow hover:shadow-md">
+                <CardContent className="px-4 pb-4 pt-4 sm:px-5 sm:pt-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div
+                      className={cn(
+                        'flex h-9 w-9 items-center justify-center rounded-lg',
+                        stat.iconClass,
+                      )}
+                    >
+                      <Icon size={17} strokeWidth={1.75} />
+                    </div>
+                    <Badge variant="muted" className="text-[10px] font-normal">
+                      live
+                    </Badge>
                   </div>
-                  <Badge variant="muted" className="text-[8px] font-black tracking-widest bg-muted/50 border-none">LIVE</Badge>
-                </div>
-                <p className="text-[11px] font-black tracking-tight text-muted-foreground uppercase">{stat.label}</p>
-                <p className="text-2xl font-black text-foreground mt-1 tabular-nums">{stat.val}</p>
-              </CardContent>
-            </Card>
+                  <p className="text-muted-foreground text-xs">{stat.label}</p>
+                  <p className="mt-1 text-lg tabular-nums text-foreground sm:text-xl">{stat.val}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
+      </motion.div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.35 }}
+        >
+          <Card className="h-[300px] border-border/80 sm:h-[340px] lg:h-[380px]">
+            <CardHeader className="pb-1 pt-4">
+              <CardTitle className="text-muted-foreground text-xs font-medium">
+                Revenue over time
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[calc(100%-3rem)] pb-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="areaColor" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.12} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    dy={8}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    width={36}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#areaColor)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.35 }}
+        >
+          <Card className="h-[300px] border-border/80 sm:h-[340px] lg:h-[380px]">
+            <CardHeader className="pb-1 pt-4">
+              <CardTitle className="text-muted-foreground text-xs font-medium">
+                Orders by hour
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[calc(100%-3rem)] pb-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={hourlyData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="hour"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                    interval={2}
+                    dy={8}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    width={28}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar
+                    dataKey="orders"
+                    fill="hsl(var(--primary))"
+                    radius={[3, 3, 0, 0]}
+                    maxBarSize={14}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="analytics-reveal border-border shadow-sm h-[380px]">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="border-border/80 lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Revenue Over Time</CardTitle>
-          </CardHeader>
-          <CardContent className="h-full pb-14">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="areaColor" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700}} dx={-10} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#areaColor)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="analytics-reveal border-border shadow-sm h-[380px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Order Volume (Hourly)</CardTitle>
-          </CardHeader>
-          <CardContent className="h-full pb-14">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700}} interval={2} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700}} dx={-10} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={16} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="analytics-reveal border-border shadow-sm lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Top Performing Offerings</CardTitle>
+            <CardTitle className="text-muted-foreground text-xs font-medium">Top items</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {live?.topItems.map((item, idx) => (
-                <div key={item.itemId} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border hover:bg-muted/60 transition-all group">
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-black text-muted-foreground w-4">{idx + 1}</span>
-                    <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{item.name}</span>
-                  </div>
-                  <div className="flex items-center gap-8">
-                    <div className="text-right">
-                      <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest">Quantity</p>
-                      <p className="text-sm font-black text-foreground tabular-nums">{item.qty}</p>
+            <motion.div className="space-y-2" variants={listParent} initial="hidden" animate="show">
+              {live?.topItems?.length ? (
+                live.topItems.map((item, idx) => (
+                  <motion.div
+                    key={item.itemId}
+                    variants={listItem}
+                    className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-3 transition-colors hover:bg-muted/40 sm:px-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="text-muted-foreground w-5 shrink-0 text-center text-xs tabular-nums">
+                        {idx + 1}
+                      </span>
+                      <span className="truncate text-sm text-foreground">{item.name}</span>
                     </div>
-                    <div className="text-right w-24">
-                      <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest">Revenue</p>
-                      <p className="text-sm font-black text-primary tabular-nums">{formatGHS(item.revenue)}</p>
+                    <div className="flex shrink-0 items-center gap-6 text-right">
+                      <div>
+                        <p className="text-muted-foreground text-[10px]">Qty</p>
+                        <p className="text-sm tabular-nums text-foreground">{item.qty}</p>
+                      </div>
+                      <div className="w-20">
+                        <p className="text-muted-foreground text-[10px]">Revenue</p>
+                        <p className="text-primary text-sm tabular-nums">
+                          {formatGHS(item.revenue)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </motion.div>
+                ))
+              ) : (
+                <p className="text-muted-foreground py-6 text-center text-sm">
+                  {loading ? 'Loading…' : 'No item data yet.'}
+                </p>
+              )}
+            </motion.div>
           </CardContent>
         </Card>
 
-        <Card className="analytics-reveal border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Order Distribution</CardTitle>
+        <Card className="border-border/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-muted-foreground text-xs font-medium">
+              Order status
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6 pt-2">
+          <CardContent className="space-y-4 pt-1">
             {[
-              { label: 'Pending', count: live?.statusCounts?.pending, color: 'bg-yellow-500' },
-              { label: 'Confirmed', count: live?.statusCounts?.confirmed, color: 'bg-primary' },
-              { label: 'Ready', count: live?.statusCounts?.ready, color: 'bg-green-500' },
-              { label: 'Done', count: live?.statusCounts?.done, color: 'bg-muted-foreground/30' },
+              { label: 'Pending', count: live?.statusCounts?.pending, bar: 'bg-amber-500' },
+              { label: 'Confirmed', count: live?.statusCounts?.confirmed, bar: 'bg-primary' },
+              { label: 'Ready', count: live?.statusCounts?.ready, bar: 'bg-emerald-500' },
+              { label: 'Done', count: live?.statusCounts?.done, bar: 'bg-muted-foreground/40' },
             ].map((st) => (
-              <div key={st.label} className="space-y-2">
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <div key={st.label} className="space-y-1.5">
+                <div className="text-muted-foreground flex justify-between text-xs">
                   <span>{st.label}</span>
-                  <span className="text-foreground">{st.count ?? 0}</span>
+                  <span className="tabular-nums text-foreground">{st.count ?? 0}</span>
                 </div>
-                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={cn("h-full rounded-full transition-all duration-700", st.color)}
-                    style={{ width: `${Math.min(((st.count ?? 0) / (live?.totalOrders || 1)) * 100, 100)}%` }}
+                <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                  <motion.div
+                    className={cn('h-full rounded-full', st.bar)}
+                    initial={{ width: 0 }}
+                    animate={{
+                      width: `${Math.min(((st.count ?? 0) / (live?.totalOrders || 1)) * 100, 100)}%`,
+                    }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
                   />
                 </div>
               </div>
@@ -278,6 +405,6 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </motion.div>
   );
 }

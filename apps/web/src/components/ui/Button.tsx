@@ -21,6 +21,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       startContent,
       endContent,
       children,
+      disabled,
       ...props
     },
     ref,
@@ -84,7 +85,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {
           ref,
           className: cn(classNames, child.props.className),
-          disabled: loading || child.props.disabled,
+          disabled: loading || disabled || child.props.disabled,
+          'aria-busy': loading ? true : undefined,
           ...props,
         },
         childContent,
@@ -92,7 +94,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     return (
-      <button className={classNames} ref={ref} disabled={loading} {...props}>
+      <button
+        className={classNames}
+        ref={ref}
+        disabled={loading || disabled}
+        aria-busy={loading ? true : undefined}
+        {...props}
+      >
         {content}
       </button>
     );

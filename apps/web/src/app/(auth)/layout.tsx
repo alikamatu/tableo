@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { gsap } from 'gsap';
+import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,7 +22,7 @@ const SIDEBAR: Record<string, { title: string; sub: string; bullets: string[] }>
   },
   '/forgot-password': {
     title: 'Secure recovery.',
-    sub: 'We\'ll get you back into your dashboard safely.',
+    sub: "We'll get you back into your dashboard safely.",
     bullets: ['Time-limited reset tokens', 'Email verification', 'Zero data exposure'],
   },
   '/reset-password': {
@@ -47,99 +47,87 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const activeKey = Object.keys(SIDEBAR).find((k) => pathname.startsWith(k)) ?? '/login';
   const sidebar = SIDEBAR[activeKey]!;
 
-  useEffect(() => {
-    gsap.fromTo(
-      cardRef.current,
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' },
-    );
-  }, []);
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg p-4 sm:p-8">
-      <div
+    <div className="flex min-h-screen items-center justify-center bg-bg p-4 sm:p-8">
+      <motion.div
         ref={cardRef}
-        className="w-full max-w-4xl bg-surface rounded-2xl overflow-hidden flex flex-col lg:flex-row ring-1 ring-border min-h-[600px]"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="flex min-h-[600px] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-surface ring-1 ring-border lg:flex-row"
       >
         {/* ── Left panel ──────────────────────────────────────────────────── */}
         <LeftPanel sidebar={sidebar} />
 
         {/* ── Right panel (form area) ─────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-12">
+        <div className="flex flex-1 flex-col justify-center px-6 py-10 sm:px-10 lg:px-12">
           {/* Logo on mobile only */}
-          <Link
-            href="/"
-            className="flex items-center gap-2 mb-8 lg:hidden"
-          >
-            <span className="h-7 w-7 rounded-lg bg-brand flex items-center justify-center">
-              <span className="text-[11px] font-bold text-white leading-none">T</span>
+          <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand">
+              <span className="text-[11px] font-bold leading-none text-white">T</span>
             </span>
             <span className="text-sm font-semibold text-fg">Tableo</span>
           </Link>
 
-          <div className="w-full max-w-sm mx-auto">
-            {children}
-          </div>
+          <div className="mx-auto w-full max-w-sm">{children}</div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
 // ─── Left panel component ─────────────────────────────────────────────────────
 
-function LeftPanel({
-  sidebar,
-}: {
-  sidebar: { title: string; sub: string; bullets: string[] };
-}) {
+function LeftPanel({ sidebar }: { sidebar: { title: string; sub: string; bullets: string[] } }) {
   const textRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    gsap.fromTo(
-      textRef.current?.children ?? [],
-      { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out', delay: 0.2 },
-    );
-  }, [sidebar.title]);
-
   return (
-    <div className="hidden lg:flex w-[340px] flex-shrink-0 flex-col justify-between bg-fg text-bg p-10 relative overflow-hidden">
+    <div className="relative hidden w-[340px] flex-shrink-0 flex-col justify-between overflow-hidden bg-fg p-10 text-bg lg:flex">
       {/* Decorative circles — brand color, no blur */}
-      <div aria-hidden className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-brand/20" />
-      <div aria-hidden className="absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-brand/10" />
+      <div aria-hidden className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-brand/20" />
+      <div
+        aria-hidden
+        className="absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-brand/10"
+      />
 
       {/* Logo */}
-      <Link href="/" className="relative z-10 flex items-center gap-2.5 mb-10">
-        <span className="h-7 w-7 rounded-lg bg-brand flex items-center justify-center flex-shrink-0">
-          <span className="text-[11px] font-bold text-white leading-none">T</span>
+      <Link href="/" className="relative z-10 mb-10 flex items-center gap-2.5">
+        <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand">
+          <span className="text-[11px] font-bold leading-none text-white">T</span>
         </span>
         <span className="text-sm font-semibold text-white">Tableo</span>
       </Link>
 
       {/* Copy */}
-      <div ref={textRef} className="relative z-10 flex-1 flex flex-col justify-center gap-6">
+      <motion.div
+        ref={textRef}
+        key={sidebar.title}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="relative z-10 flex flex-1 flex-col justify-center gap-6"
+      >
         <div>
-          <h2 className="text-2xl font-semibold text-white leading-tight tracking-tight">
+          <h2 className="text-2xl font-semibold leading-tight tracking-tight text-white">
             {sidebar.title}
           </h2>
-          <p className="text-sm text-white/60 mt-2 leading-relaxed">{sidebar.sub}</p>
+          <p className="mt-2 text-sm leading-relaxed text-white/60">{sidebar.sub}</p>
         </div>
 
         <ul className="space-y-3">
           {sidebar.bullets.map((b) => (
             <li key={b} className="flex items-center gap-3">
-              <span className="h-5 w-5 rounded-full bg-brand/30 flex items-center justify-center flex-shrink-0">
+              <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand/30">
                 <Check size={11} className="text-white" strokeWidth={3} />
               </span>
               <span className="text-xs text-white/75">{b}</span>
             </li>
           ))}
         </ul>
-      </div>
+      </motion.div>
 
       {/* Footer */}
-      <div className="relative z-10 pt-6 border-t border-white/10">
+      <div className="relative z-10 border-t border-white/10 pt-6">
         <p className="text-xs text-white/40">
           © {new Date().getFullYear()} Tableo · Built in Accra, Ghana
         </p>

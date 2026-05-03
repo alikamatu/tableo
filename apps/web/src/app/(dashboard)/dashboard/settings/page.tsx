@@ -19,8 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { motion } from 'framer-motion';
 import * as React from 'react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
@@ -140,19 +139,6 @@ export default function SettingsPage() {
     }
   }, [dispatch]);
 
-  useGSAP(
-    () => {
-      gsap.from('.settings-reveal', {
-        opacity: 0,
-        y: 10,
-        stagger: 0.05,
-        duration: 0.4,
-        ease: 'power3.out',
-      });
-    },
-    { scope: containerRef, dependencies: [activeTab] },
-  );
-
   const handleUpdateProfile = async () => {
     setLoading(true);
     try {
@@ -266,7 +252,13 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      <div className="settings-reveal min-h-[500px]">
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28 }}
+        className="min-h-[500px]"
+      >
         {activeTab === 'profile' && (
           <Card className="max-w-2xl border-border shadow-sm">
             <CardHeader>
@@ -512,7 +504,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

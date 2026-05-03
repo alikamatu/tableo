@@ -14,41 +14,7 @@ import type { UpdateProfileDto } from './dto/update-profile.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '@tableo/types';
-
-/**
- * Generates cookie options for auth tokens.
- * Consistent options are required for the browser to correctly clear cookies.
- */
-function getCookieOptions(httpOnly = true) {
-  const isProd = process.env['NODE_ENV'] === 'production';
-  return {
-    httpOnly,
-    secure: isProd,
-    // Using 'lax' allows the cookie to be sent on top-level redirects (Google Auth)
-    sameSite: 'lax' as const,
-    path: '/',
-    // maxAge is only used when setting, not clearing
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  };
-}
-
-function setAuthCookies(res: ExpressResponse, refreshToken: string, onboardComplete: boolean) {
-  res.cookie('refresh_token', refreshToken, getCookieOptions(true));
-  res.cookie('onboard_complete', String(onboardComplete), getCookieOptions(false));
-}
-
-function clearAuthCookies(res: ExpressResponse) {
-  // Clearing must match name, path, and security flags EXACTLY
-  const refreshOpts = getCookieOptions(true);
-  const onboardOpts = getCookieOptions(false);
-
-  // Remove maxAge as it's not needed for clearing
-  const { maxAge: _1, ...refreshClear } = refreshOpts;
-  const { maxAge: _2, ...onboardClear } = onboardOpts;
-
-  res.clearCookie('refresh_token', refreshClear);
-  res.clearCookie('onboard_complete', onboardClear);
-}
+import { clearAuthCookies, setAuthCookies } from './auth-cookies';
 
 @ApiTags('Auth')
 @Controller('auth')

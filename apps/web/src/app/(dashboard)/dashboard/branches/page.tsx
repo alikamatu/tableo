@@ -33,8 +33,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/DropdownMenu';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { motion } from 'framer-motion';
 import * as React from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -70,18 +69,6 @@ export default function BranchesPage() {
       dispatch(fetchBranches(restaurant.id));
     }
   }, [dispatch, restaurant?.id]);
-
-  useGSAP(() => {
-    if (!loading) {
-      gsap.from('.branch-card', {
-        opacity: 0,
-        y: 10,
-        stagger: 0.05,
-        duration: 0.4,
-        ease: 'power3.out',
-      });
-    }
-  }, [loading, branches.length]);
 
   const filteredBranches = useMemo(() => {
     return branches.filter((b) => {
@@ -226,100 +213,107 @@ export default function BranchesPage() {
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredBranches.map((b) => (
-            <Card
+            <motion.div
               key={b.id}
-              className="branch-card group flex h-full flex-col overflow-hidden border-border bg-surface transition-all hover:shadow-xl"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
             >
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
-                <div className="min-w-0 pr-2">
-                  <div className="mb-1 flex items-center gap-2">
-                    <Badge
-                      variant={b.isActive ? 'primary' : 'muted'}
-                      className="h-5 px-1.5 text-[10px] font-bold uppercase tracking-wider"
-                    >
-                      {b.isActive ? 'Active' : 'Closed'}
-                    </Badge>
-                  </div>
-                  <CardTitle className="truncate text-lg font-bold leading-tight">
-                    {b.name}
-                  </CardTitle>
-                </div>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-muted">
-                      <MoreVertical size={18} className="text-muted-foreground" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem onClick={() => router.push(`/dashboard/branches/${b.id}`)}>
-                      <Edit2 size={14} className="mr-2" /> Edit Branch
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-danger focus:text-danger"
-                      onClick={() => setDeletingId(b.id)}
-                    >
-                      <Trash2 size={14} className="mr-2" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-
-              <CardContent className="flex flex-1 flex-col space-y-5">
-                <div className="space-y-2.5">
-                  <div className="text-muted-foreground flex items-start gap-2 text-sm font-medium">
-                    <MapPin size={16} className="text-primary/60 mt-0.5 shrink-0" />
-                    <span className="line-clamp-2 leading-snug">
-                      {b.address || 'Location undisclosed'}
-                    </span>
-                  </div>
-                  {b.phone && (
-                    <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                      <Phone size={16} className="text-primary/60 shrink-0" />
-                      <span>{b.phone}</span>
+              <Card
+                key={b.id}
+                className="branch-card group flex h-full flex-col overflow-hidden border-border bg-surface transition-all hover:shadow-xl"
+              >
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+                  <div className="min-w-0 pr-2">
+                    <div className="mb-1 flex items-center gap-2">
+                      <Badge
+                        variant={b.isActive ? 'primary' : 'muted'}
+                        className="h-5 px-1.5 text-[10px] font-bold uppercase tracking-wider"
+                      >
+                        {b.isActive ? 'Active' : 'Closed'}
+                      </Badge>
                     </div>
-                  )}
-                </div>
+                    <CardTitle className="truncate text-lg font-bold leading-tight">
+                      {b.name}
+                    </CardTitle>
+                  </div>
 
-                <div className="mt-auto space-y-4 pt-2">
-                  <div className="group-hover:bg-accent/50 flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-2.5 transition-colors">
-                    <div className="text-muted-foreground flex-1 truncate text-xs font-bold tracking-tight opacity-70">
-                      /{b.slug}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-muted">
+                        <MoreVertical size={18} className="text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/branches/${b.id}`)}>
+                        <Edit2 size={14} className="mr-2" /> Edit Branch
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-danger focus:text-danger"
+                        onClick={() => setDeletingId(b.id)}
+                      >
+                        <Trash2 size={14} className="mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+
+                <CardContent className="flex flex-1 flex-col space-y-5">
+                  <div className="space-y-2.5">
+                    <div className="text-muted-foreground flex items-start gap-2 text-sm font-medium">
+                      <MapPin size={16} className="text-primary/60 mt-0.5 shrink-0" />
+                      <span className="line-clamp-2 leading-snug">
+                        {b.address || 'Location undisclosed'}
+                      </span>
                     </div>
-                    <button
-                      className="hover:border-primary/40 hover:text-primary flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-[10px] font-bold transition-all"
-                      onClick={() => window.open(`/menu/${b.slug}`, '_blank')}
-                    >
-                      View Menu <ExternalLink size={12} className="ml-1.5" />
-                    </button>
+                    {b.phone && (
+                      <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                        <Phone size={16} className="text-primary/60 shrink-0" />
+                        <span>{b.phone}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <Button
-                    className="shadow-primary/10 h-10 w-full gap-2 text-xs font-bold shadow-lg"
-                    onClick={() => handleManageBranch(b)}
-                  >
-                    <ShoppingCart size={16} /> Manage Orders
-                  </Button>
+                  <div className="mt-auto space-y-4 pt-2">
+                    <div className="group-hover:bg-accent/50 flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-2.5 transition-colors">
+                      <div className="text-muted-foreground flex-1 truncate text-xs font-bold tracking-tight opacity-70">
+                        /{b.slug}
+                      </div>
+                      <button
+                        className="hover:border-primary/40 hover:text-primary flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-[10px] font-bold transition-all"
+                        onClick={() => window.open(`/menu/${b.slug}`, '_blank')}
+                      >
+                        View Menu <ExternalLink size={12} className="ml-1.5" />
+                      </button>
+                    </div>
 
-                  <div className="flex gap-2">
                     <Button
-                      variant="outline"
-                      className="hover:bg-primary/5 hover:border-primary/20 h-10 flex-1 gap-2 border-border text-xs font-bold"
-                      onClick={() => showQrCode(b.id)}
+                      className="shadow-primary/10 h-10 w-full gap-2 text-xs font-bold shadow-lg"
+                      onClick={() => handleManageBranch(b)}
                     >
-                      <QrCode size={16} /> QR Code
+                      <ShoppingCart size={16} /> Manage Orders
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="hover:bg-primary/5 hover:border-primary/20 h-10 flex-1 gap-2 border-border text-xs font-bold"
-                      onClick={() => router.push(`/dashboard/branches/${b.id}`)}
-                    >
-                      <Edit2 size={16} /> Edit
-                    </Button>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="hover:bg-primary/5 hover:border-primary/20 h-10 flex-1 gap-2 border-border text-xs font-bold"
+                        onClick={() => showQrCode(b.id)}
+                      >
+                        <QrCode size={16} /> QR Code
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="hover:bg-primary/5 hover:border-primary/20 h-10 flex-1 gap-2 border-border text-xs font-bold"
+                        onClick={() => router.push(`/dashboard/branches/${b.id}`)}
+                      >
+                        <Edit2 size={16} /> Edit
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </div>
       )}

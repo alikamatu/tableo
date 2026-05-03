@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import api from '@/lib/api';
+import { tokenStore } from '@/lib/tokens';
 import { normalizeError, type NormalizedError } from '@/lib/api-error';
+import { markOnboardComplete } from '@/stores/authSlice';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -142,14 +144,21 @@ export const loadOnboardingState = createAsyncThunk(
 /** Save a step to the API and advance */
 export const saveOnboardingStep = createAsyncThunk(
   'onboarding/saveStep',
-  async (payload: Partial<OnboardingDraft> & { step: OnboardStep }, { rejectWithValue }) => {
+  async (
+    payload: Partial<OnboardingDraft> & { step: OnboardStep },
+    { rejectWithValue, dispatch },
+  ) => {
     try {
       const { data } = await api.patch('/onboarding/step', payload);
-      return data.data as {
+      const d = data.data as {
         step: OnboardStep;
         complete: boolean;
         restaurant: Record<string, unknown>;
+        accessToken?: string;
       };
+      if (d.accessToken) tokenStore.set(d.accessToken);
+      if (d.complete) dispatch(markOnboardComplete());
+      return d;
     } catch (err) {
       return rejectWithValue(normalizeError(err));
     }

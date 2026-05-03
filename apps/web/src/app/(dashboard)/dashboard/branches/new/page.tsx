@@ -24,8 +24,7 @@ import { Select } from '@/components/ui/Select';
 import { Divider } from '@/components/ui/Divider';
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { motion } from 'framer-motion';
 import * as React from 'react';
 
 export default function NewBranchPage() {
@@ -63,19 +62,6 @@ export default function NewBranchPage() {
       setForm((prev) => ({ ...prev, restaurantId: restaurants[0]!.id }));
     }
   }, [currentRestaurant, restaurants, form.restaurantId]);
-
-  useGSAP(
-    () => {
-      gsap.from('.reveal', {
-        opacity: 0,
-        y: 20,
-        stagger: 0.1,
-        duration: 0.5,
-        ease: 'power3.out',
-      });
-    },
-    { scope: containerRef },
-  );
 
   const update = (field: string) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -116,8 +102,14 @@ export default function NewBranchPage() {
   };
 
   return (
-    <div ref={containerRef} className="mx-auto max-w-2xl space-y-8 pb-10">
-      <div className="reveal flex items-center gap-4">
+    <motion.div
+      ref={containerRef}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="mx-auto max-w-2xl space-y-8 pb-10"
+    >
+      <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
@@ -134,7 +126,7 @@ export default function NewBranchPage() {
         </div>
       </div>
 
-      <Card className="reveal overflow-hidden border-none bg-surface shadow-xl">
+      <Card className="overflow-hidden border-none bg-surface shadow-xl">
         <CardHeader className="bg-primary/5 border-primary/10 border-b p-6">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
@@ -323,6 +315,6 @@ export default function NewBranchPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </motion.div>
   );
 }

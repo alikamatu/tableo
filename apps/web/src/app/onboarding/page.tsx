@@ -1,9 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { gsap } from 'gsap';
+import { useEffect, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Store,
   MapPin,
@@ -40,7 +39,6 @@ import { Alert, useAlert } from '@/components/ui/Alert';
 import { Divider } from '@/components/ui/Divider';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { refreshSession } from '@/stores/authSlice';
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 
@@ -156,7 +154,6 @@ type PaymentForm = z.infer<typeof paymentSchema>;
 export default function OnboardingPage() {
   const dispatch = useAppDispatch();
   const { step, loading } = useAppSelector((s) => s.onboarding);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Hydrate draft from localStorage then load server state
   useEffect(() => {
@@ -166,18 +163,9 @@ export default function OnboardingPage() {
 
   // Note: StepDone handles the redirect with its preparation animation
 
-  // Animate step transitions
-  const animateStep = useCallback(() => {
-    gsap.fromTo(
-      containerRef.current,
-      { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' },
-    );
-  }, []);
+  const animateStep = useCallback(() => {}, []);
 
-  useEffect(() => {
-    animateStep();
-  }, [step, animateStep]);
+  useEffect(() => animateStep(), [step, animateStep]);
 
   if (loading) {
     return <AppLoader message="Loading your setup…" />;
@@ -206,16 +194,23 @@ export default function OnboardingPage() {
       {step !== 'welcome' && step !== 'done' && <ProgressBar step={step} />}
 
       {/* Step content */}
-      <div
-        ref={containerRef}
-        className="flex flex-1 flex-col items-center justify-center px-5 py-10"
-      >
+      <div className="flex flex-1 flex-col items-center justify-center px-5 py-10">
         <div className="w-full max-w-lg">
-          {step === 'welcome' && <StepWelcome />}
-          {step === 'restaurant_info' && <StepRestaurantInfo onNext={animateStep} />}
-          {step === 'location_hours' && <StepLocation onNext={animateStep} />}
-          {step === 'payment' && <StepPayment onNext={animateStep} />}
-          {step === 'done' && <StepDone />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.32, ease: 'easeOut' }}
+            >
+              {step === 'welcome' && <StepWelcome />}
+              {step === 'restaurant_info' && <StepRestaurantInfo onNext={animateStep} />}
+              {step === 'location_hours' && <StepLocation onNext={animateStep} />}
+              {step === 'payment' && <StepPayment onNext={animateStep} />}
+              {step === 'done' && <StepDone />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </div>
@@ -340,7 +335,7 @@ function StepRestaurantInfo({ onNext }: { onNext: () => void }) {
     'idle',
   );
   const [uploading, setUploading] = React.useState(false);
-  const slugTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const slugTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const {
     register,
@@ -955,43 +950,54 @@ const PHASES = [
 ];
 
 function StepDone() {
-  const router = useRouter();
-  const dispatch = useAppDispatch();
   const { draft } = useAppSelector((s) => s.onboarding);
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const [phase, setPhase] = React.useState(0);
   const [done, setDone] = React.useState(false);
 
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
-
+    const phaseTicker = setInterval(() => {
+      setPhase((prev) => {
+        if (prev >= PHASES.length) return prev;
+        return prev + 1;
+      });
+    }, 1300);
     timers.push(
       setTimeout(
-        async () => {
-          // Refresh session to update the refresh_token cookie with onboardComplete: true
-          await dispatch(refreshSession());
-          router.replace('/subscription');
+        () => {
+          setDone(true);
         },
-        PHASES.length * 1500 + 3500,
+        PHASES.length * 1300 + 500,
       ),
     );
-    return () => timers.forEach(clearTimeout);
-  }, [router, dispatch]);
 
-  useEffect(() => {
-    if (containerRef.current) {
-      gsap.fromTo(
-        containerRef.current,
-        { opacity: 0, scale: 0.95 },
-        { opacity: 1, scale: 1, duration: 0.5, ease: 'power3.out' },
-      );
-    }
-  }, [done]);
+    // Session cookies + access token were already updated on the final PATCH /onboarding/step.
+    timers.push(
+      setTimeout(
+        () => {
+          window.location.href = '/subscription';
+        },
+        PHASES.length * 1300 + 2500,
+      ),
+    );
+    return () => {
+      clearInterval(phaseTicker);
+      timers.forEach(clearTimeout);
+    };
+  }, []);
+
+  const handleManualRedirect = () => {
+    window.location.href = '/subscription';
+  };
 
   if (done) {
     return (
-      <div ref={containerRef} className="space-y-6 text-center">
+      <motion.div
+        className="space-y-6 text-center"
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+      >
         <div className="flex justify-center">
           <div className="relative h-20 w-20">
             <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-success/10">
@@ -1001,18 +1007,27 @@ function StepDone() {
           </div>
         </div>
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-fg">You&apos;re all set! 🎉</h2>
+          <h2 className="text-base font-medium tracking-tight text-fg sm:text-lg">
+            You&apos;re all set
+          </h2>
           <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted">
-            <strong className="text-fg">{draft.name || 'Your restaurant'}</strong> is ready. Taking
-            you to your dashboard…
+            {draft.name || 'Your restaurant'} is ready. Continuing to subscription…
           </p>
         </div>
-        <div className="flex justify-center">
+
+        <div className="flex flex-col items-center gap-4">
           <div className="h-1 w-32 overflow-hidden rounded-full bg-subtle">
             <div className="h-full animate-[loading_2s_ease-in-out_forwards] rounded-full bg-brand" />
           </div>
+          <button
+            type="button"
+            onClick={handleManualRedirect}
+            className="text-xs text-muted transition-colors hover:text-fg"
+          >
+            Continue now
+          </button>
         </div>
-      </div>
+      </motion.div>
     );
   }
 

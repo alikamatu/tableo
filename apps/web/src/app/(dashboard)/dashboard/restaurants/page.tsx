@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { gsap } from 'gsap';
+import { useEffect, useRef, useCallback } from 'react';
 import {
   Store,
   Globe,
@@ -15,23 +14,27 @@ import {
   Clock,
   CreditCard,
   Check,
-  ChevronDown,
-  ChevronUp,
   ExternalLink,
   Copy,
-  AlertCircle,
   Loader2,
-  Building2,
   Banknote,
   Upload,
-  User,
   ShieldCheck,
-  Settings2,
+  UtensilsCrossed,
+  ArrowUpRight,
+  Sparkles,
+  Wifi,
+  CircleDot,
+  ChevronRight,
+  Edit3,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 import { useAppDispatch, useAppSelector } from '@/stores/store';
 import {
@@ -41,12 +44,9 @@ import {
   type RestaurantUpdatePayload,
 } from '@/stores/restaurantSlice';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Alert, useAlert } from '@/components/ui/Alert';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { Alert } from '@/components/ui/Alert';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
-import toast from 'react-hot-toast';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -66,7 +66,7 @@ const CUISINE_OPTIONS = [
 ];
 
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
-const DAY_LABELS: Record<string, string> = {
+const DAY_FULL: Record<string, string> = {
   mon: 'Monday',
   tue: 'Tuesday',
   wed: 'Wednesday',
@@ -76,72 +76,66 @@ const DAY_LABELS: Record<string, string> = {
   sun: 'Sunday',
 };
 
-const planBadge: Record<string, 'muted' | 'primary' | 'success'> = {
-  starter: 'muted',
-  pro: 'primary',
-  business: 'success',
-};
+const TABS = [
+  { id: 'identity', label: 'Identity', icon: Store },
+  { id: 'contact', label: 'Contact', icon: Globe },
+  { id: 'social', label: 'Social', icon: Instagram },
+  { id: 'location', label: 'Location', icon: MapPin },
+  { id: 'payment', label: 'Payments', icon: CreditCard },
+  { id: 'subscription', label: 'Plan', icon: ShieldCheck },
+] as const;
 
-// ─── Zod schema (full restaurant update) ─────────────────────────────────────
+type TabId = (typeof TABS)[number]['id'];
+
+// ─── Zod schema ───────────────────────────────────────────────────────────────
 
 const schema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.').max(120),
+  name: z.string().min(2).max(120),
   slug: z
     .string()
     .min(3)
     .max(60)
-    .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, hyphens only.'),
+    .regex(/^[a-z0-9-]+$/, 'Lowercase, numbers, hyphens only.'),
   tagline: z.string().max(160).optional().or(z.literal('')),
   description: z.string().max(500).optional().or(z.literal('')),
   logoUrl: z.string().url().optional().or(z.literal('')),
   coverUrl: z.string().url().optional().or(z.literal('')),
-  // Contact
   phone: z.string().max(20).optional().or(z.literal('')),
-  email: z.string().email('Enter a valid email.').optional().or(z.literal('')),
-  website: z.string().url('Enter a full URL (https://…)').optional().or(z.literal('')),
-  // Social
+  email: z.string().email().optional().or(z.literal('')),
+  website: z.string().url().optional().or(z.literal('')),
   instagramHandle: z.string().max(60).optional().or(z.literal('')),
   twitterHandle: z.string().max(60).optional().or(z.literal('')),
   facebookHandle: z.string().max(100).optional().or(z.literal('')),
   tiktokHandle: z.string().max(60).optional().or(z.literal('')),
-  // Location
   address: z.string().max(300).optional().or(z.literal('')),
   city: z.string().max(80).optional().or(z.literal('')),
   country: z.string().max(80).optional().or(z.literal('')),
-  currency: z
-    .string()
-    .length(3, 'Currency must be a 3-letter code (e.g. GHS)')
-    .optional()
-    .or(z.literal('')),
-  // Paystack
-  paystackPublicKey: z
-    .string()
-    .startsWith('pk_', 'Must start with pk_')
-    .optional()
-    .or(z.literal('')),
-  paystackSecretKey: z
-    .string()
-    .startsWith('sk_', 'Must start with sk_')
-    .optional()
-    .or(z.literal('')),
-  // Settlement
+  currency: z.string().length(3).optional().or(z.literal('')),
+  paystackPublicKey: z.string().optional().or(z.literal('')),
+  paystackSecretKey: z.string().optional().or(z.literal('')),
   settlementType: z.enum(['bank', 'momo']).optional(),
   settlementBank: z.string().max(120).optional().or(z.literal('')),
   settlementAccountNumber: z.string().max(20).optional().or(z.literal('')),
 });
-
 type FormValues = z.infer<typeof schema>;
 
-// ─── Tabs Configuration ───────────────────────────────────────────────────────
+// ─── Variants for animations ──────────────────────────────────────────────────
 
-const TABS = [
-  { id: 'identity', label: 'Identity', icon: Store, desc: 'Brand name, logo and tagline' },
-  { id: 'contact', label: 'Contact', icon: Globe, desc: 'Phone, email and website' },
-  { id: 'social', label: 'Social', icon: Instagram, desc: 'Social media handles' },
-  { id: 'location', label: 'Location', icon: MapPin, desc: 'Physical address and hours' },
-  { id: 'payment', label: 'Payments', icon: CreditCard, desc: 'Paystack and banking' },
-  { id: 'subscription', label: 'Subscription', icon: ShieldCheck, desc: 'Plan and features' },
-];
+const fadeSlide = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -6 },
+  transition: { duration: 0.22, ease: 'easeOut' },
+};
+
+const stagger = {
+  animate: { transition: { staggerChildren: 0.05 } },
+};
+
+const item = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -149,73 +143,45 @@ export default function RestaurantsPage() {
   const dispatch = useAppDispatch();
   const { restaurants, loading, saving } = useAppSelector((s) => s.restaurant);
   const restaurant = restaurants[0] ?? null;
-  const pageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatch(fetchRestaurants());
   }, [dispatch]);
 
-  useEffect(() => {
-    if (!restaurant) return;
-    gsap.fromTo(
-      pageRef.current,
-      { opacity: 0, scale: 0.98, y: 10 },
-      { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: 'expo.out' },
-    );
-  }, [!!restaurant]);
-
   if (loading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 size={32} className="animate-spin text-brand" />
-          <p className="text-sm font-medium text-muted">Preparing your dashboard...</p>
-        </div>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-3"
+        >
+          <Loader2 size={20} className="animate-spin text-brand" />
+          <p className="text-xs text-muted">Loading…</p>
+        </motion.div>
       </div>
     );
   }
 
   if (!restaurant) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/20 text-muted">
-          <Store size={32} />
+      <motion.div
+        {...fadeSlide}
+        className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-subtle">
+          <Store size={20} className="text-muted" />
         </div>
-        <div className="space-y-1">
-          <p className="text-lg font-bold text-fg">No restaurant found</p>
-          <p className="max-w-xs text-sm text-muted">
-            Complete onboarding to set up your restaurant profile and start taking orders.
-          </p>
-        </div>
-      </div>
+        <p className="text-sm font-medium text-fg">No restaurant found</p>
+        <p className="max-w-xs text-xs text-muted">Complete onboarding to set up your profile.</p>
+      </motion.div>
     );
   }
 
   return (
-    <div ref={pageRef} className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <PageHeader
-          title="Restaurant Settings"
-          description="Refine your brand, manage operations, and configure payments."
-        />
-        <div className="hidden gap-2 sm:flex">
-          <Badge
-            variant="outline"
-            className="h-8 px-3 text-[10px] font-black uppercase tracking-wider"
-          >
-            Status: {restaurant.subStatus}
-          </Badge>
-          <Badge
-            variant="primary"
-            className="h-8 px-3 text-[10px] font-black uppercase tracking-wider"
-          >
-            {restaurant.plan} Plan
-          </Badge>
-        </div>
-      </div>
-
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       <RestaurantEditor restaurant={restaurant} saving={saving} />
-    </div>
+    </motion.div>
   );
 }
 
@@ -223,12 +189,11 @@ export default function RestaurantsPage() {
 
 function RestaurantEditor({ restaurant, saving }: { restaurant: Restaurant; saving: boolean }) {
   const dispatch = useAppDispatch();
-  const { show, node: alertNode } = useAlert();
-  const [activeTab, setActiveTab] = useState('identity');
-  const [showSecretKey, setShowSecretKey] = React.useState(false);
-  const [logoUploading, setLogoUploading] = React.useState(false);
-  const [coverUploading, setCoverUploading] = React.useState(false);
-  const [cuisineList, setCuisineList] = React.useState<string[]>(restaurant.cuisine ?? []);
+  const [tab, setTab] = React.useState<TabId>('identity');
+  const [showSecret, setShowSecret] = React.useState(false);
+  const [logoLoading, setLogoLoading] = React.useState(false);
+  const [coverLoading, setCoverLoading] = React.useState(false);
+  const [cuisine, setCuisine] = React.useState<string[]>(restaurant.cuisine ?? []);
   const [hours, setHours] = React.useState(
     restaurant.openingHours ?? {
       mon: { open: '08:00', close: '22:00', closed: false },
@@ -281,548 +246,47 @@ function RestaurantEditor({ restaurant, saving }: { restaurant: Restaurant; savi
       const payload: RestaurantUpdatePayload & { id: string } = {
         id: restaurant.id,
         ...values,
-        cuisine: cuisineList,
+        cuisine,
         openingHours: hours,
       };
       if (!payload.paystackSecretKey) delete payload.paystackSecretKey;
-
-      const nullableFields: (keyof typeof payload)[] = [
-        'tagline',
-        'description',
-        'logoUrl',
-        'coverUrl',
-        'phone',
-        'email',
-        'website',
-        'instagramHandle',
-        'twitterHandle',
-        'facebookHandle',
-        'tiktokHandle',
-        'address',
-        'city',
-        'paystackPublicKey',
-        'settlementType',
-        'settlementBank',
-        'settlementAccountNumber',
-      ];
-      for (const key of nullableFields) {
-        if ((payload as Record<string, unknown>)[key] === '') {
-          (payload as Record<string, unknown>)[key] = null;
-        }
-      }
-
-      if (payload.currency === '') payload.currency = 'GHS';
-      if (payload.country === '') payload.country = 'Ghana';
+      // Coerce empty strings to null
+      (Object.keys(payload) as (keyof typeof payload)[]).forEach((k) => {
+        if (payload[k] === '') (payload as Record<string, unknown>)[k] = null;
+      });
+      if (!payload.currency) payload.currency = 'GHS';
+      if (!payload.country) payload.country = 'Ghana';
 
       const result = await dispatch(updateRestaurant(payload));
       if (updateRestaurant.fulfilled.match(result)) {
-        toast.success('Restaurant updated successfully.');
+        toast.success('Saved');
         reset(values);
       } else {
-        const err = result.payload as { message: string } | undefined;
-        toast.error(err?.message ?? 'Failed to save changes.');
+        const err = result.payload as { message?: string } | undefined;
+        toast.error(err?.message ?? 'Failed to save.');
       }
     },
-    [dispatch, restaurant.id, cuisineList, hours, reset],
+    [dispatch, restaurant.id, cuisine, hours, reset],
   );
 
   const toggleCuisine = (c: string) =>
-    setCuisineList((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+    setCuisine((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]));
 
-  const updateHours = (day: string, field: string, value: string | boolean) =>
-    setHours((prev) => ({
-      ...prev,
-      [day]: { ...prev[day]!, [field]: value },
-    }));
-
-  const menuUrl = `https://tableo.app/menu/${restaurant.slug}`;
-
-  return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-      {/* Sidebar Navigation */}
-      <aside className="lg:col-span-3">
-        <div className="sticky top-24 space-y-1">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'group flex w-full flex-col items-start gap-0.5 rounded-xl px-4 py-3 text-left transition-all duration-200',
-                  isActive
-                    ? 'bg-brand text-white shadow-lg shadow-brand/20'
-                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon
-                    size={18}
-                    className={cn(
-                      isActive ? 'text-white' : 'text-muted-foreground group-hover:text-brand',
-                    )}
-                  />
-                  <span className="text-sm font-bold tracking-tight">{tab.label}</span>
-                </div>
-                <span
-                  className={cn(
-                    'ml-7 text-[10px] font-medium leading-tight opacity-70',
-                    isActive ? 'text-white/80' : 'text-muted-foreground',
-                  )}
-                >
-                  {tab.desc}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="lg:col-span-9">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="space-y-6"
-            >
-              {/* Identity Section */}
-              {activeTab === 'identity' && (
-                <div className="space-y-6">
-                  <HeroCard restaurant={restaurant} />
-
-                  <GlassCard title="Brand Identity" icon={Store}>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      <FieldInput
-                        label="Restaurant name *"
-                        error={errors.name?.message}
-                        {...register('name')}
-                      />
-                      <div className="space-y-1.5">
-                        <label className="text-muted-foreground block text-xs font-black uppercase tracking-widest">
-                          Menu URL slug *
-                        </label>
-                        <div className="relative">
-                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted">
-                            /menu/
-                          </span>
-                          <input
-                            className={cn(
-                              'h-11 w-full rounded-xl border border-border/50 bg-muted/30 pl-14 pr-3 text-sm font-medium text-fg',
-                              'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40',
-                              errors.slug && 'ring-2 ring-danger/50',
-                            )}
-                            {...register('slug')}
-                          />
-                        </div>
-                        <div className="mt-2 flex items-center gap-3 px-1">
-                          <a
-                            href={menuUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] font-black uppercase tracking-wider text-brand hover:underline"
-                          >
-                            Open Menu <ExternalLink size={10} className="ml-1 inline" />
-                          </a>
-                          <CopyButton text={menuUrl} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 space-y-6">
-                      <FieldInput
-                        label="Tagline"
-                        placeholder="A short one-liner for your menu page"
-                        error={errors.tagline?.message}
-                        {...register('tagline')}
-                      />
-                      <div className="space-y-1.5">
-                        <label className="text-muted-foreground block text-xs font-black uppercase tracking-widest">
-                          Description
-                        </label>
-                        <textarea
-                          className="h-32 w-full resize-none rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-sm font-medium text-fg outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/40"
-                          placeholder="Tell your story..."
-                          {...register('description')}
-                        />
-                      </div>
-                    </div>
-                  </GlassCard>
-
-                  <GlassCard title="Visuals" icon={Upload}>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      {/* Logo Upload */}
-                      <div className="space-y-3">
-                        <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-                          Logo
-                        </p>
-                        <div
-                          onClick={() => document.getElementById('logo-upload')?.click()}
-                          className="group relative flex aspect-square w-32 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-border transition-all hover:border-brand/50 hover:bg-brand/5"
-                        >
-                          {logoUploading ? (
-                            <Loader2 size={24} className="animate-spin text-brand" />
-                          ) : watch('logoUrl') ? (
-                            <img
-                              src={watch('logoUrl')}
-                              className="h-full w-full rounded-2xl object-contain p-2"
-                              alt="logo"
-                            />
-                          ) : (
-                            <div className="text-muted-foreground flex flex-col items-center gap-2 group-hover:text-brand">
-                              <Upload size={20} />
-                              <span className="text-[10px] font-bold">UPLOAD</span>
-                            </div>
-                          )}
-                          <input
-                            id="logo-upload"
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => handleUpload(e, 'logos', 'logoUrl')}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Cover Upload */}
-                      <div className="space-y-3">
-                        <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-                          Cover Image
-                        </p>
-                        <div
-                          onClick={() => document.getElementById('cover-upload')?.click()}
-                          className="group relative flex h-32 w-full cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-border transition-all hover:border-brand/50 hover:bg-brand/5"
-                        >
-                          {coverUploading ? (
-                            <Loader2 size={24} className="animate-spin text-brand" />
-                          ) : watch('coverUrl') ? (
-                            <img
-                              src={watch('coverUrl')}
-                              className="h-full w-full rounded-2xl object-cover"
-                              alt="cover"
-                            />
-                          ) : (
-                            <div className="text-muted-foreground flex flex-col items-center gap-2 group-hover:text-brand">
-                              <Upload size={20} />
-                              <span className="text-[10px] font-bold">UPLOAD COVER</span>
-                            </div>
-                          )}
-                          <input
-                            id="cover-upload"
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => handleUpload(e, 'covers', 'coverUrl')}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </GlassCard>
-
-                  <GlassCard title="Cuisine" icon={Store}>
-                    <div className="flex flex-wrap gap-2">
-                      {CUISINE_OPTIONS.map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => toggleCuisine(c)}
-                          className={cn(
-                            'rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200',
-                            cuisineList.includes(c)
-                              ? 'translate-y-[-1px] bg-brand text-white shadow-md shadow-brand/20'
-                              : 'text-muted-foreground bg-muted/50 hover:bg-muted hover:text-foreground',
-                          )}
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </GlassCard>
-                </div>
-              )}
-
-              {/* Contact Tab */}
-              {activeTab === 'contact' && (
-                <GlassCard title="Contact Information" icon={Globe}>
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <FieldInput
-                      label="Phone"
-                      type="tel"
-                      placeholder="+233..."
-                      startIcon={<Phone size={16} />}
-                      {...register('phone')}
-                    />
-                    <FieldInput
-                      label="Email"
-                      type="email"
-                      placeholder="hello@restaurant.com"
-                      startIcon={<Mail size={16} />}
-                      {...register('email')}
-                    />
-                    <div className="sm:col-span-2">
-                      <FieldInput
-                        label="Website"
-                        type="url"
-                        placeholder="https://..."
-                        startIcon={<Globe size={16} />}
-                        {...register('website')}
-                      />
-                    </div>
-                  </div>
-                </GlassCard>
-              )}
-
-              {/* Social Tab */}
-              {activeTab === 'social' && (
-                <GlassCard title="Social Presence" icon={Instagram}>
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <FieldInput
-                      label="Instagram"
-                      placeholder="username"
-                      startIcon={<Instagram size={16} />}
-                      hint="Handle without @"
-                      {...register('instagramHandle')}
-                    />
-                    <FieldInput
-                      label="Twitter / X"
-                      placeholder="username"
-                      startIcon={<Twitter size={16} />}
-                      hint="Handle without @"
-                      {...register('twitterHandle')}
-                    />
-                    <FieldInput
-                      label="Facebook"
-                      placeholder="page_name"
-                      startIcon={<Facebook size={16} />}
-                      {...register('facebookHandle')}
-                    />
-                    <FieldInput
-                      label="TikTok"
-                      placeholder="username"
-                      startIcon={<Building2 size={16} />}
-                      {...register('tiktokHandle')}
-                    />
-                  </div>
-                </GlassCard>
-              )}
-
-              {/* Location Tab */}
-              {activeTab === 'location' && (
-                <div className="space-y-6">
-                  <GlassCard title="Physical Address" icon={MapPin}>
-                    <div className="space-y-6">
-                      <FieldInput
-                        label="Street Address"
-                        placeholder="123 Osu, Accra..."
-                        startIcon={<MapPin size={16} />}
-                        {...register('address')}
-                      />
-                      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                        <FieldInput label="City" placeholder="Accra" {...register('city')} />
-                        <FieldInput label="Country" placeholder="Ghana" {...register('country')} />
-                        <FieldInput label="Currency" placeholder="GHS" {...register('currency')} />
-                      </div>
-                    </div>
-                  </GlassCard>
-
-                  <GlassCard title="Operating Hours" icon={Clock}>
-                    <div className="divide-y divide-border/30 overflow-hidden rounded-2xl border border-border/50 bg-muted/20">
-                      {DAYS.map((day) => {
-                        const h = hours[day] || { open: '08:00', close: '22:00', closed: false };
-                        return (
-                          <div key={day} className="flex items-center justify-between px-5 py-4">
-                            <span className="text-muted-foreground w-12 text-xs font-black uppercase tracking-wider">
-                              {day}
-                            </span>
-                            {h.closed ? (
-                              <span className="text-[10px] font-black uppercase text-danger/60">
-                                Closed for business
-                              </span>
-                            ) : (
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="time"
-                                  value={h.open}
-                                  onChange={(e) => updateHours(day, 'open', e.target.value)}
-                                  className="h-9 w-24 rounded-lg border border-border/50 bg-surface px-3 text-xs font-bold"
-                                />
-                                <span className="text-xs text-muted">to</span>
-                                <input
-                                  type="time"
-                                  value={h.close}
-                                  onChange={(e) => updateHours(day, 'close', e.target.value)}
-                                  className="h-9 w-24 rounded-lg border border-border/50 bg-surface px-3 text-xs font-bold"
-                                />
-                              </div>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => updateHours(day, 'closed', !h.closed)}
-                              className={cn(
-                                'h-8 rounded-lg px-4 text-[10px] font-black uppercase tracking-widest transition-all',
-                                h.closed
-                                  ? 'text-success-foreground bg-success'
-                                  : 'text-muted-foreground bg-muted',
-                              )}
-                            >
-                              {h.closed ? 'Open' : 'Close'}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </GlassCard>
-                </div>
-              )}
-
-              {/* Payments Tab */}
-              {activeTab === 'payment' && (
-                <div className="space-y-6">
-                  <GlassCard title="Paystack Integration" icon={CreditCard}>
-                    <Alert
-                      variant="info"
-                      message="Keys are encrypted. Only enter if you wish to update."
-                      className="mb-6"
-                    />
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      <FieldInput
-                        label="Public Key"
-                        placeholder="pk_test_..."
-                        startIcon={<CreditCard size={16} />}
-                        {...register('paystackPublicKey')}
-                      />
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
-                            Secret Key
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => setShowSecretKey(!showSecretKey)}
-                            className="text-[10px] font-bold uppercase text-brand underline"
-                          >
-                            {showSecretKey ? 'Hide' : 'Reveal'}
-                          </button>
-                        </div>
-                        <input
-                          type={showSecretKey ? 'text' : 'password'}
-                          placeholder="sk_test_..."
-                          className="h-11 w-full rounded-xl border border-border/50 bg-muted/30 px-4 text-sm font-medium outline-none focus:ring-2 focus:ring-brand/40"
-                          {...register('paystackSecretKey')}
-                        />
-                      </div>
-                    </div>
-                  </GlassCard>
-
-                  <GlassCard title="Payout Settings" icon={Banknote}>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                      <div className="space-y-1.5">
-                        <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
-                          Type
-                        </label>
-                        <select
-                          className="h-11 w-full rounded-xl border border-border/50 bg-muted/30 px-3 text-sm font-bold outline-none"
-                          {...register('settlementType')}
-                        >
-                          <option value="">Select</option>
-                          <option value="bank">Bank</option>
-                          <option value="momo">MoMo</option>
-                        </select>
-                      </div>
-                      <FieldInput
-                        label="Provider"
-                        placeholder="GCB / MTN"
-                        {...register('settlementBank')}
-                      />
-                      <FieldInput
-                        label="Account #"
-                        placeholder="020..."
-                        {...register('settlementAccountNumber')}
-                      />
-                    </div>
-                  </GlassCard>
-                </div>
-              )}
-
-              {/* Subscription Tab */}
-              {activeTab === 'subscription' && (
-                <GlassCard title="Plan & Billing" icon={ShieldCheck}>
-                  <SubscriptionPanel restaurant={restaurant} />
-                </GlassCard>
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Bottom Save Action */}
-          <div className="flex items-center justify-end border-t border-border pt-6">
-            <Button
-              type="submit"
-              size="lg"
-              loading={saving}
-              className="h-14 rounded-2xl px-10 text-xs font-black uppercase tracking-widest shadow-xl shadow-brand/20"
-            >
-              <Check size={18} className="mr-2" /> Save Settings
-            </Button>
-          </div>
-        </form>
-      </main>
-
-      {/* Floating Save Bar */}
-      <AnimatePresence>
-        {isDirty && (
-          <motion.div
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            exit={{ y: 100 }}
-            className="fixed bottom-8 left-1/2 z-50 flex w-[90%] max-w-md -translate-x-1/2 items-center justify-between gap-4 rounded-3xl bg-fg px-6 py-4 text-bg shadow-2xl backdrop-blur-xl"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/20 text-brand">
-                <AlertCircle size={18} />
-              </div>
-              <span className="text-sm font-bold">Unsaved changes</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => reset()}
-                className="text-xs font-bold opacity-60 hover:opacity-100"
-              >
-                Discard
-              </button>
-              <Button
-                size="sm"
-                loading={saving}
-                onClick={handleSubmit(onSubmit)}
-                className="h-9 rounded-xl bg-white text-[10px] font-black uppercase tracking-widest text-fg hover:bg-white/90"
-              >
-                Save
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+  const updateHour = (day: string, field: string, val: string | boolean) =>
+    setHours((p) => ({ ...p, [day]: { ...p[day]!, [field]: val } }));
 
   async function handleUpload(
     e: React.ChangeEvent<HTMLInputElement>,
-    folder: string,
     field: 'logoUrl' | 'coverUrl',
   ) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (field === 'logoUrl') setLogoUploading(true);
-    else setCoverUploading(true);
-
+    const set = field === 'logoUrl' ? setLogoLoading : setCoverLoading;
+    set(true);
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('folder', `tableo/${folder}`);
+      fd.append('folder', `tableo/${field === 'logoUrl' ? 'logos' : 'covers'}`);
       const res = await api.post('/uploads/image', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -831,226 +295,697 @@ function RestaurantEditor({ restaurant, saving }: { restaurant: Restaurant; savi
     } catch {
       toast.error('Upload failed.');
     } finally {
-      if (field === 'logoUrl') setLogoUploading(false);
-      else setCoverUploading(false);
+      set(false);
     }
   }
-}
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+  const logoUrl = watch('logoUrl');
+  const coverUrl = watch('coverUrl');
+  const menuUrl = `https://tableo.app/menu/${restaurant.slug}`;
 
-function HeroCard({ restaurant }: { restaurant: Restaurant }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/50 bg-surface shadow-sm">
-      <div
-        className="h-40 w-full bg-muted/20 bg-cover bg-center"
-        style={restaurant.coverUrl ? { backgroundImage: `url(${restaurant.coverUrl})` } : {}}
+    <div className="max-w-3xl">
+      {/* ── Profile strip ──────────────────────────────────────────────── */}
+      <motion.div
+        variants={stagger}
+        initial="initial"
+        animate="animate"
+        className="mb-6 flex items-center gap-4"
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-      </div>
+        {/* Avatar */}
+        <motion.div variants={item} className="relative flex-shrink-0">
+          <div
+            onClick={() => document.getElementById('logo-input')?.click()}
+            className="group relative h-14 w-14 cursor-pointer overflow-hidden rounded-2xl bg-subtle"
+          >
+            {logoLoading ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <Loader2 size={16} className="animate-spin text-brand" />
+              </div>
+            ) : logoUrl ? (
+              <img src={logoUrl} className="h-full w-full object-contain p-1.5" alt="" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Store size={18} className="text-muted" />
+              </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+              <Upload size={14} className="text-white" />
+            </div>
+          </div>
+          <input
+            id="logo-input"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleUpload(e, 'logoUrl')}
+          />
+        </motion.div>
 
-      <div className="relative px-6 pb-6">
-        <div className="-mt-12 flex items-end justify-between">
-          <div className="flex items-end gap-5">
-            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border-[6px] border-surface bg-white shadow-xl shadow-black/10">
-              {restaurant.logoUrl ? (
-                <img
-                  src={restaurant.logoUrl}
-                  className="h-full w-full object-contain p-2"
-                  alt="logo"
-                />
-              ) : (
-                <Store size={32} className="text-muted" />
+        {/* Name + slug + status */}
+        <motion.div variants={item} className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="truncate text-base font-semibold text-fg">{restaurant.name}</h1>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium',
+                restaurant.subStatus === 'active'
+                  ? 'bg-success/10 text-success'
+                  : 'bg-danger/10 text-danger',
               )}
-            </div>
-            <div className="pb-2">
-              <h2 className="text-2xl font-black tracking-tight text-white">{restaurant.name}</h2>
-              <p className="text-xs font-medium text-white/70">@{restaurant.slug}</p>
-            </div>
-          </div>
-          <div className="pb-2">
-            <Badge
-              variant={planBadge[restaurant.plan] ?? 'muted'}
-              className="h-7 px-4 text-[10px] font-black uppercase tracking-widest"
             >
+              <CircleDot size={8} />
               {restaurant.plan}
-            </Badge>
+            </span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-2">
+            <span className="truncate text-xs text-muted">tableo.app/menu/{restaurant.slug}</span>
+            <CopyBtn text={menuUrl} />
+            <a
+              href={menuUrl}
+              target="_blank"
+              rel="noopener"
+              className="text-muted transition-colors hover:text-fg"
+            >
+              <ArrowUpRight size={12} />
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Save button — visible on desktop */}
+        <motion.div variants={item} className="hidden flex-shrink-0 sm:block">
+          <Button type="submit" size="sm" loading={saving} form="restaurant-form">
+            <Check size={14} /> Save
+          </Button>
+        </motion.div>
+      </motion.div>
+
+      {/* ── Cover strip ────────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08, duration: 0.25 }}
+        className="mb-5"
+      >
+        <div
+          onClick={() => document.getElementById('cover-input')?.click()}
+          className="group relative h-28 w-full cursor-pointer overflow-hidden rounded-xl bg-subtle"
+        >
+          {coverLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-bg/60">
+              <Loader2 size={18} className="animate-spin text-brand" />
+            </div>
+          )}
+          {coverUrl ? (
+            <img src={coverUrl} className="h-full w-full object-cover" alt="" />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted">
+              <Upload size={16} />
+              <span className="text-xs">Add cover photo</span>
+            </div>
+          )}
+          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-white">
+              <Upload size={13} /> Replace cover
+            </div>
           </div>
         </div>
+        <input
+          id="cover-input"
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleUpload(e, 'coverUrl')}
+        />
+      </motion.div>
 
-        <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border/50 pt-6">
-          {[
-            { label: 'Branches', value: restaurant._count?.branches ?? 0, icon: MapPin },
-            {
-              label: 'Menu Items',
-              value: restaurant._count?.menuItems ?? 0,
-              icon: UtensilsCrossed,
-            },
-            { label: 'Status', value: restaurant.subStatus, icon: ShieldCheck },
-          ].map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center gap-1">
-              <stat.icon size={12} className="text-muted-foreground" />
-              <span className="text-xs font-black capitalize text-fg">{stat.value}</span>
-              <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-tighter">
-                {stat.label}
-              </span>
+      {/* ── Tab bar ────────────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.12 }}
+        className="scrollbar-hide mb-5 flex gap-1 overflow-x-auto pb-0.5"
+      >
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const active = tab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                'relative flex flex-shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors duration-150',
+                active ? 'text-fg' : 'text-muted hover:bg-subtle hover:text-fg',
+              )}
+            >
+              <Icon size={13} />
+              {label}
+              {active && (
+                <motion.div
+                  layoutId="tab-indicator"
+                  className="absolute inset-0 rounded-lg bg-subtle"
+                  style={{ zIndex: -1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </motion.div>
+
+      {/* ── Form ───────────────────────────────────────────────────────── */}
+      <form id="restaurant-form" onSubmit={handleSubmit(onSubmit)}>
+        <AnimatePresence mode="wait">
+          <motion.div key={tab} {...fadeSlide}>
+            {/* Identity */}
+            {tab === 'identity' && (
+              <Section>
+                <Row>
+                  <Field label="Restaurant name" error={errors.name?.message}>
+                    <Input {...register('name')} placeholder="Chow House" error={!!errors.name} />
+                  </Field>
+                  <Field label="Menu slug" error={errors.slug?.message}>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted">
+                        /menu/
+                      </span>
+                      <Input {...register('slug')} className="pl-14" error={!!errors.slug} />
+                    </div>
+                  </Field>
+                </Row>
+                <Field label="Tagline" hint="Shown on your public menu page">
+                  <Input {...register('tagline')} placeholder="Fresh food, fast." />
+                </Field>
+                <Field label="Description">
+                  <textarea
+                    {...register('description')}
+                    placeholder="Tell customers what makes your restaurant special."
+                    className="h-20 w-full resize-none rounded-lg bg-subtle px-3 py-2.5 text-sm text-fg outline-none transition-all placeholder:text-muted focus:bg-surface focus:ring-2 focus:ring-brand/30"
+                  />
+                </Field>
+                <Field label="Cuisine types" hint="Select all that apply">
+                  <div className="flex flex-wrap gap-1.5">
+                    {CUISINE_OPTIONS.map((c) => {
+                      const on = cuisine.includes(c);
+                      return (
+                        <motion.button
+                          key={c}
+                          type="button"
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => toggleCuisine(c)}
+                          className={cn(
+                            'rounded-full px-3 py-1 text-xs font-medium transition-all duration-150',
+                            on ? 'bg-brand text-white' : 'bg-subtle text-muted hover:text-fg',
+                          )}
+                        >
+                          {c}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </Field>
+              </Section>
+            )}
+
+            {/* Contact */}
+            {tab === 'contact' && (
+              <Section>
+                <Row>
+                  <Field label="Phone">
+                    <Input
+                      {...register('phone')}
+                      type="tel"
+                      placeholder="+233 20 000 0000"
+                      startIcon={<Phone size={14} />}
+                    />
+                  </Field>
+                  <Field label="Email" error={errors.email?.message}>
+                    <Input
+                      {...register('email')}
+                      type="email"
+                      placeholder="hello@restaurant.com"
+                      startIcon={<Mail size={14} />}
+                      error={!!errors.email}
+                    />
+                  </Field>
+                </Row>
+                <Field label="Website" error={errors.website?.message}>
+                  <Input
+                    {...register('website')}
+                    type="url"
+                    placeholder="https://yourrestaurant.com"
+                    startIcon={<Globe size={14} />}
+                    error={!!errors.website}
+                  />
+                </Field>
+              </Section>
+            )}
+
+            {/* Social */}
+            {tab === 'social' && (
+              <Section>
+                <Alert
+                  variant="info"
+                  message="Enter handles without the @ symbol."
+                  className="mb-4"
+                />
+                <Row>
+                  <Field label="Instagram">
+                    <Input
+                      {...register('instagramHandle')}
+                      placeholder="yourrestaurant"
+                      startIcon={<Instagram size={14} />}
+                    />
+                  </Field>
+                  <Field label="X / Twitter">
+                    <Input
+                      {...register('twitterHandle')}
+                      placeholder="yourrestaurant"
+                      startIcon={<Twitter size={14} />}
+                    />
+                  </Field>
+                  <Field label="Facebook">
+                    <Input
+                      {...register('facebookHandle')}
+                      placeholder="yourpage"
+                      startIcon={<Facebook size={14} />}
+                    />
+                  </Field>
+                  <Field label="TikTok">
+                    <Input
+                      {...register('tiktokHandle')}
+                      placeholder="yourrestaurant"
+                      startIcon={
+                        <svg
+                          viewBox="0 0 24 24"
+                          width={14}
+                          height={14}
+                          fill="currentColor"
+                          className="text-muted"
+                        >
+                          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z" />
+                        </svg>
+                      }
+                    />
+                  </Field>
+                </Row>
+              </Section>
+            )}
+
+            {/* Location */}
+            {tab === 'location' && (
+              <Section>
+                <Field label="Street address">
+                  <Input
+                    {...register('address')}
+                    placeholder="123 Oxford Street, Osu"
+                    startIcon={<MapPin size={14} />}
+                  />
+                </Field>
+                <Row>
+                  <Field label="City">
+                    <Input {...register('city')} placeholder="Accra" />
+                  </Field>
+                  <Field label="Country">
+                    <Input {...register('country')} placeholder="Ghana" />
+                  </Field>
+                  <Field label="Currency" hint="3-letter ISO">
+                    <Input {...register('currency')} placeholder="GHS" className="uppercase" />
+                  </Field>
+                </Row>
+
+                {/* Hours */}
+                <Field label="Opening hours">
+                  <div className="divide-y divide-border overflow-hidden rounded-xl">
+                    {DAYS.map((day, i) => {
+                      const h = hours[day] ?? { open: '08:00', close: '22:00', closed: false };
+                      return (
+                        <motion.div
+                          key={day}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.03 }}
+                          className={cn(
+                            'flex items-center gap-3 bg-surface px-3 py-2.5',
+                            h.closed && 'opacity-50',
+                          )}
+                        >
+                          <span className="w-9 flex-shrink-0 text-xs font-medium text-muted">
+                            {DAY_FULL[day]?.slice(0, 3)}
+                          </span>
+                          {h.closed ? (
+                            <span className="flex-1 text-xs text-muted">Closed</span>
+                          ) : (
+                            <div className="flex flex-1 items-center gap-2">
+                              <input
+                                type="time"
+                                value={h.open}
+                                onChange={(e) => updateHour(day, 'open', e.target.value)}
+                                className="h-7 w-24 rounded-md bg-subtle px-2 text-xs text-fg outline-none focus:ring-1 focus:ring-brand/40"
+                              />
+                              <span className="text-xs text-muted">–</span>
+                              <input
+                                type="time"
+                                value={h.close}
+                                onChange={(e) => updateHour(day, 'close', e.target.value)}
+                                className="h-7 w-24 rounded-md bg-subtle px-2 text-xs text-fg outline-none focus:ring-1 focus:ring-brand/40"
+                              />
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => updateHour(day, 'closed', !h.closed)}
+                            className={cn(
+                              'flex-shrink-0 rounded-full px-2.5 py-1 text-2xs font-medium transition-colors',
+                              h.closed
+                                ? 'bg-success/10 text-success'
+                                : 'bg-subtle text-muted hover:text-fg',
+                            )}
+                          >
+                            {h.closed ? 'Open' : 'Close'}
+                          </button>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </Field>
+              </Section>
+            )}
+
+            {/* Payments */}
+            {tab === 'payment' && (
+              <Section>
+                <Alert
+                  variant="info"
+                  message="Your secret key is stored encrypted and never shown in the UI. Enter it only when you want to update it."
+                  className="mb-2"
+                />
+                <Row>
+                  <Field label="Paystack public key" error={errors.paystackPublicKey?.message}>
+                    <Input
+                      {...register('paystackPublicKey')}
+                      placeholder="pk_test_…"
+                      startIcon={<CreditCard size={14} />}
+                      hint={restaurant.paystackPublicKey ? '✓ Currently set' : 'Not configured'}
+                    />
+                  </Field>
+                  <Field label="Paystack secret key">
+                    <div className="relative">
+                      <Input
+                        {...register('paystackSecretKey')}
+                        type={showSecret ? 'text' : 'password'}
+                        placeholder="sk_test_… (leave blank to keep)"
+                        hint={
+                          restaurant.paystackPublicKey ? '✓ Secret key is set' : 'Not configured'
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSecret((p) => !p)}
+                        className="absolute right-3 top-2.5 text-muted transition-colors hover:text-fg"
+                      >
+                        {showSecret ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </Field>
+                </Row>
+
+                <div className="mt-2 border-t border-border pt-4">
+                  <p className="mb-3 flex items-center gap-1.5 text-xs text-muted">
+                    <Banknote size={13} className="text-muted" /> Settlement account
+                  </p>
+                  <Row>
+                    <Field label="Type">
+                      <select
+                        {...register('settlementType')}
+                        className="h-10 w-full appearance-none rounded-lg bg-subtle px-3 text-sm text-fg outline-none focus:ring-2 focus:ring-brand/30"
+                      >
+                        <option value="">Select</option>
+                        <option value="bank">Bank account</option>
+                        <option value="momo">Mobile money</option>
+                      </select>
+                    </Field>
+                    <Field label="Bank / provider">
+                      <Input {...register('settlementBank')} placeholder="GCB / MTN" />
+                    </Field>
+                    <Field label="Account number">
+                      <Input {...register('settlementAccountNumber')} placeholder="020…" />
+                    </Field>
+                  </Row>
+                </div>
+              </Section>
+            )}
+
+            {/* Subscription */}
+            {tab === 'subscription' && (
+              <Section>
+                <PlanPanel restaurant={restaurant} />
+              </Section>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* ── Bottom save ─────────────────────────────────────────────── */}
+        <div className="mt-6 flex items-center justify-end gap-3 border-t border-border pt-5">
+          {isDirty && (
+            <button
+              type="button"
+              onClick={() => reset()}
+              className="text-xs text-muted transition-colors hover:text-fg"
+            >
+              Discard
+            </button>
+          )}
+          <Button type="submit" size="sm" loading={saving}>
+            <Check size={14} /> Save changes
+          </Button>
+        </div>
+      </form>
+
+      {/* ── Floating unsaved bar ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {isDirty && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-full bg-fg px-5 py-2.5 text-bg shadow-xl"
+          >
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning" />
+              <span className="text-xs font-medium">Unsaved changes</span>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="h-3 w-px bg-bg/20" />
+            <button
+              form="restaurant-form"
+              type="submit"
+              className="text-xs font-semibold text-brand"
+            >
+              {saving ? <Loader2 size={12} className="animate-spin" /> : 'Save'}
+            </button>
+            <button
+              type="button"
+              onClick={() => reset()}
+              className="text-xs text-bg/50 transition-colors hover:text-bg"
+            >
+              Discard
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function GlassCard({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: any;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="overflow-hidden rounded-3xl border border-border/50 bg-surface/50 p-6 shadow-sm backdrop-blur-xl transition-all hover:shadow-md">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand">
-          <Icon size={18} />
-        </div>
-        <h3 className="text-sm font-black uppercase tracking-widest text-fg">{title}</h3>
-      </div>
-      {children}
-    </div>
-  );
-}
+// ─── Plan panel ────────────────────────────────────────────────────────────────
 
-function SubscriptionPanel({ restaurant }: { restaurant: Restaurant }) {
-  const features: Record<string, string[]> = {
-    starter: ['1 branch', 'Digital menu + QR', 'Up to 60 items'],
-    pro: ['Up to 3 branches', 'Online ordering + Paystack', 'Live orders', 'Analytics'],
+function PlanPanel({ restaurant }: { restaurant: Restaurant }) {
+  const FEATURES: Record<string, { label: string; icon: React.ElementType }[]> = {
+    starter: [
+      { label: '1 branch', icon: MapPin },
+      { label: 'Digital menu + QR code', icon: Wifi },
+      { label: 'Up to 60 menu items', icon: UtensilsCrossed },
+      { label: 'Basic analytics', icon: Sparkles },
+    ],
+    pro: [
+      { label: 'Up to 3 branches', icon: MapPin },
+      { label: 'Online ordering + Paystack', icon: CreditCard },
+      { label: 'Live orders dashboard', icon: Wifi },
+      { label: 'Analytics & reports', icon: Sparkles },
+    ],
     business: [
-      'Unlimited branches',
-      'Staff permissions',
-      'Cross-branch analytics',
-      'Custom domain',
+      { label: 'Unlimited branches', icon: MapPin },
+      { label: 'Staff roles & permissions', icon: ShieldCheck },
+      { label: 'Cross-branch analytics', icon: Sparkles },
+      { label: 'Custom domain', icon: Globe },
     ],
   };
 
+  const feats = FEATURES[restaurant.plan] ?? FEATURES['starter']!;
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <p className="text-lg font-black capitalize text-fg">{restaurant.plan} Plan</p>
-          <div className="flex items-center gap-2">
-            <Badge variant={restaurant.subStatus === 'active' ? 'success' : 'danger'}>
-              {restaurant.subStatus}
-            </Badge>
+    <div className="space-y-5">
+      {/* Current plan card */}
+      <div className="flex items-center justify-between rounded-xl bg-subtle p-4">
+        <div>
+          <p className="text-sm font-semibold capitalize text-fg">{restaurant.plan} plan</p>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                restaurant.subStatus === 'active' ? 'bg-success' : 'bg-danger',
+              )}
+            />
+            <span className="text-xs capitalize text-muted">{restaurant.subStatus}</span>
             {restaurant.subExpiresAt && (
-              <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
-                Renews {new Date(restaurant.subExpiresAt).toLocaleDateString()}
+              <span className="text-xs text-muted">
+                · Renews{' '}
+                {new Date(restaurant.subExpiresAt).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                })}
               </span>
             )}
           </div>
         </div>
         {restaurant.plan !== 'business' && (
-          <Button variant="secondary" className="rounded-xl px-6 font-bold">
-            Upgrade
+          <Button size="sm" variant="secondary">
+            Upgrade <ChevronRight size={13} />
           </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {(features[restaurant.plan] ?? []).map((f) => (
-          <div
-            key={f}
-            className="flex items-center gap-3 rounded-2xl border border-border/50 bg-muted/30 p-4"
+      {/* Features */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {feats.map(({ label, icon: Icon }, i) => (
+          <motion.div
+            key={label}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2.5"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/20 text-success">
-              <Check size={14} strokeWidth={3} />
-            </div>
-            <span className="text-xs font-bold text-fg">{f}</span>
-          </div>
+            <span className="bg-brand/8 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md">
+              <Icon size={12} className="text-brand" />
+            </span>
+            <span className="text-xs text-fg">{label}</span>
+          </motion.div>
         ))}
       </div>
+
+      {restaurant.plan !== 'business' && (
+        <div className="flex items-start gap-3 rounded-xl border border-border p-4">
+          <Sparkles size={16} className="mt-0.5 flex-shrink-0 text-brand" />
+          <div>
+            <p className="text-sm font-medium text-fg">More features available</p>
+            <p className="mt-0.5 text-xs text-muted">
+              Upgrade to unlock multi-branch management, staff roles, and advanced analytics.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-const FieldInput = React.forwardRef<HTMLInputElement, any>(
-  ({ label, error, hint, startIcon, className, ...props }, ref) => (
-    <div className="space-y-2">
-      {label && (
-        <label className="text-muted-foreground block px-1 text-xs font-black uppercase tracking-widest">
-          {label}
-        </label>
+// ─── Shared primitives ────────────────────────────────────────────────────────
+
+function Section({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div variants={stagger} initial="initial" animate="animate" className="space-y-4">
+      {children}
+    </motion.div>
+  );
+}
+
+function Row({ children }: { children: React.ReactNode }) {
+  const count = React.Children.count(children);
+  return (
+    <div
+      className={cn(
+        'grid gap-3',
+        count === 2 ? 'sm:grid-cols-2' : count === 3 ? 'sm:grid-cols-3' : 'grid-cols-1',
       )}
-      <div className="relative">
-        {startIcon && (
-          <span className="text-muted-foreground pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 opacity-50">
-            {startIcon}
-          </span>
-        )}
-        <input
-          ref={ref}
-          className={cn(
-            'h-12 w-full rounded-2xl border border-border/50 bg-muted/30 px-4 text-sm font-medium text-fg transition-all placeholder:text-muted/60',
-            'shadow-inner-sm outline-none focus:bg-surface focus:ring-2 focus:ring-brand/40',
-            'disabled:cursor-not-allowed disabled:opacity-40',
-            startIcon && 'pl-11',
-            error && 'border-danger/20 ring-2 ring-danger/50',
-            className,
-          )}
-          {...props}
-        />
-      </div>
+    >
+      {children}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  error,
+  children,
+}: {
+  label?: string;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.div variants={item} className="space-y-1.5">
+      {label && <label className="block text-xs font-medium text-fg">{label}</label>}
+      {children}
       {error && (
-        <p className="px-1 text-[10px] font-bold uppercase tracking-tighter text-danger">{error}</p>
+        <motion.p
+          initial={{ opacity: 0, y: -3 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xs text-danger"
+        >
+          {error}
+        </motion.p>
       )}
-      {hint && !error && (
-        <p className="text-muted-foreground px-1 text-[10px] font-bold uppercase tracking-tight opacity-70">
-          {hint}
-        </p>
+      {hint && !error && <p className="text-xs text-muted">{hint}</p>}
+    </motion.div>
+  );
+}
+
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: boolean;
+  hint?: string;
+  startIcon?: React.ReactNode;
+}
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ error, hint, startIcon, className, ...props }, ref) => (
+    <div className="relative">
+      {startIcon && (
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+          {startIcon}
+        </span>
       )}
+      <input
+        ref={ref}
+        className={cn(
+          'h-10 w-full rounded-lg bg-subtle px-3 text-sm text-fg placeholder:text-muted',
+          'outline-none transition-all focus:bg-surface focus:ring-2 focus:ring-brand/30',
+          'disabled:cursor-not-allowed disabled:opacity-40',
+          startIcon && 'pl-9',
+          error && 'ring-2 ring-danger/40',
+          className,
+        )}
+        {...props}
+      />
     </div>
   ),
 );
-FieldInput.displayName = 'FieldInput';
+Input.displayName = 'Input';
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = React.useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    });
-  };
+function CopyBtn({ text }: { text: string }) {
+  const [done, setDone] = React.useState(false);
   return (
     <button
       type="button"
-      onClick={copy}
-      className="text-muted-foreground flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-colors hover:text-fg"
+      onClick={() =>
+        navigator.clipboard.writeText(text).then(() => {
+          setDone(true);
+          setTimeout(() => setDone(false), 1600);
+        })
+      }
+      className="text-muted transition-colors hover:text-fg"
     >
-      {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
-      {copied ? 'Copied' : 'Copy link'}
+      {done ? <Check size={11} className="text-success" /> : <Copy size={11} />}
     </button>
-  );
-}
-
-function UtensilsCrossed(props: any) {
-  return (
-    <svg
-      {...props}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m3 2 1.41 1.41L12 11l7.59-7.59L21 2" />
-      <path d="m9 9 5.88 5.88" />
-      <path d="M19 15v7" />
-      <path d="M15 19h7" />
-    </svg>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   ChevronRight,
   FolderTree,
@@ -9,6 +10,7 @@ import {
   Plus,
   Search,
   UtensilsCrossed,
+  LayoutList,
 } from 'lucide-react';
 import { formatGHS } from '@tableo/utils';
 import { useAppSelector } from '@/stores/store';
@@ -133,12 +135,22 @@ export default function MenuHubPage() {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-4xl pb-28">
-      <div className="mb-6 space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Menu</h1>
-        <p className="text-muted-foreground text-sm font-medium sm:text-base">
-          Categories, optional subcategories, then dishes — all editable on dedicated pages.
-        </p>
+    <motion.div
+      className="relative mx-auto w-full max-w-4xl pb-28"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="mb-6 flex items-start gap-3">
+        <div className="bg-primary/10 text-primary mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+          <LayoutList size={18} strokeWidth={1.75} />
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-lg font-medium tracking-tight text-foreground sm:text-xl">Menu</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Categories, subcategories, and dishes — each opens on its own page to edit.
+          </p>
+        </div>
       </div>
 
       {error ? (
@@ -152,9 +164,9 @@ export default function MenuHubPage() {
         </Card>
       ) : null}
 
-      <Card className="mb-6">
+      <Card className="bg-card/50 mb-6 border-border/80">
         <CardContent className="space-y-4 py-4">
-          <p className="text-sm font-semibold text-foreground">Get started</p>
+          <p className="text-sm font-medium text-foreground">Get started</p>
           <ul className="space-y-2 text-sm">
             <li className="flex items-center gap-2">
               <span
@@ -207,31 +219,42 @@ export default function MenuHubPage() {
       {loading ? (
         <p className="text-muted-foreground py-16 text-center text-sm font-medium">Loading menu…</p>
       ) : topLevelCategories.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center gap-6 py-16 text-center">
-            <div className="bg-primary/10 text-primary flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm">
-              <UtensilsCrossed size={32} />
-            </div>
-            <div className="space-y-1">
-              <p className="text-lg font-bold text-foreground">No categories yet</p>
-              <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-                Create a top-level section (e.g. Mains, Drinks), then add subcategories if you need
-                finer groupings.
-              </p>
-            </div>
-            <Button asChild startContent={<Plus size={18} />}>
-              <Link href="/dashboard/menu/categories/new">New category</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+        >
+          <Card className="border-dashed border-border/80 bg-muted/20">
+            <CardContent className="flex flex-col items-center gap-5 py-14 text-center sm:py-16">
+              <div className="bg-primary/10 text-primary flex h-14 w-14 items-center justify-center rounded-xl">
+                <UtensilsCrossed size={26} strokeWidth={1.75} />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-base font-medium text-foreground">No categories yet</p>
+                <p className="text-muted-foreground mx-auto max-w-sm text-sm leading-relaxed">
+                  Add a section (e.g. Mains, Drinks), then optional subcategories and items.
+                </p>
+              </div>
+              <Button asChild startContent={<Plus size={17} strokeWidth={1.75} />}>
+                <Link href="/dashboard/menu/categories/new">New category</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       ) : visibleTopLevel.length === 0 ? (
         <p className="text-muted-foreground py-12 text-center text-sm">
           No matches for your search.
         </p>
       ) : (
         <div className="space-y-8">
-          {visibleTopLevel.map((cat) => (
-            <section key={cat.id} className="space-y-3">
+          {visibleTopLevel.map((cat, si) => (
+            <motion.section
+              key={cat.id}
+              className="space-y-3"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: si * 0.05, duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
                   <div className="relative mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted">
@@ -243,7 +266,9 @@ export default function MenuHubPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-bold text-foreground">{cat.name}</h2>
+                      <h2 className="text-base font-medium text-foreground sm:text-lg">
+                        {cat.name}
+                      </h2>
                       <Badge variant="muted" className="h-5">
                         {
                           (itemsByCategoryId.get(cat.id) ?? []).filter((i) =>
@@ -292,7 +317,9 @@ export default function MenuHubPage() {
                     <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-2">
                         <FolderTree className="text-muted-foreground h-4 w-4 shrink-0" />
-                        <h3 className="text-base font-bold text-foreground">{sub.name}</h3>
+                        <h3 className="text-sm font-medium text-foreground sm:text-base">
+                          {sub.name}
+                        </h3>
                         <Badge variant="outline" className="h-5 text-[10px]">
                           Subcategory
                         </Badge>
@@ -316,12 +343,12 @@ export default function MenuHubPage() {
                     />
                   </div>
                 ))}
-            </section>
+            </motion.section>
           ))}
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-bg/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-bg/85">
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/90 px-4 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex max-w-4xl gap-3">
           <Button variant="outline" className="flex-1" asChild>
             <Link href="/dashboard/menu/categories/new">New category</Link>
@@ -331,7 +358,7 @@ export default function MenuHubPage() {
           </Button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -376,7 +403,7 @@ function ItemListBlock({
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-foreground">{item.name}</p>
+                <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
                 {item.description ? (
                   <p className="text-muted-foreground line-clamp-1 text-xs font-medium">
                     {item.description}
@@ -389,7 +416,7 @@ function ItemListBlock({
               </div>
             </Link>
             <div className="flex shrink-0 items-center justify-between gap-4 sm:justify-end">
-              <p className="text-sm font-bold text-foreground">
+              <p className="text-sm font-medium tabular-nums text-foreground">
                 {item.discountedPrice ? (
                   <span className="flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-2">
                     <span className="text-muted-foreground text-xs line-through">
@@ -402,7 +429,7 @@ function ItemListBlock({
                 )}
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground hidden text-[10px] font-bold uppercase tracking-wider sm:inline">
+                <span className="text-muted-foreground hidden text-[10px] font-medium uppercase tracking-wide sm:inline">
                   {item.isAvailable ? 'On' : 'Off'}
                 </span>
                 <Switch
