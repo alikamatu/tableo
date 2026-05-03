@@ -55,7 +55,7 @@ export class OrdersService {
       throw new BadRequestException('Order must contain at least one item.');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       // Resolve item prices with branch overrides
       const resolvedItems = await Promise.all(
         dto.items.map(async (line) => {
@@ -88,7 +88,7 @@ export class OrdersService {
       );
 
       const total = resolvedItems.reduce(
-        (sum, i) => sum.add(i.unitPrice.mul(new Prisma.Decimal(i.quantity))),
+        (sum: any, i: any) => sum.add(i.unitPrice.mul(new Prisma.Decimal(i.quantity))),
         new Prisma.Decimal(0),
       );
 
@@ -235,7 +235,7 @@ export class OrdersService {
     ]);
 
     return {
-      data: orders.map((o) => this.transformOrder(o)),
+      data: orders.map((o: any) => this.transformOrder(o)),
       meta: buildPaginationMeta(total, query.page ?? 1, take),
     };
   }

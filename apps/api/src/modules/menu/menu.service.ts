@@ -122,7 +122,7 @@ export class MenuService {
       include: { category: { select: { id: true, name: true } } },
       orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
     });
-    return items.map((i) => this.transformItem(i));
+    return items.map((i: any) => this.transformItem(i));
   }
 
   private transformItem(item: any) {
@@ -142,7 +142,7 @@ export class MenuService {
       where: { restaurantId, isFeatured: true, isAvailable: true },
       orderBy: { sortOrder: 'asc' },
     });
-    return items.map((i) => this.transformItem(i));
+    return items.map((i: any) => this.transformItem(i));
   }
 
   async updateItem(id: string, dto: UpdateMenuItemDto) {
@@ -309,7 +309,10 @@ export class MenuService {
         },
       },
       recommendations: categories
-        .flatMap((cat) => [...cat.menuItems, ...cat.subCategories.flatMap((sub) => sub.menuItems)])
+        .flatMap((cat: any) => [
+          ...cat.menuItems,
+          ...cat.subCategories.flatMap((sub: any) => sub.menuItems),
+        ])
         .map(resolveItem)
         .filter(Boolean)
         .filter(
@@ -317,7 +320,7 @@ export class MenuService {
             item.isFeatured || item.label === 'bestseller' || item.label === 'chef_special',
         )
         .slice(0, 8),
-      categories: categories.map((cat) => ({
+      categories: categories.map((cat: any) => ({
         id: cat.id,
         name: cat.name,
         description: cat.description,

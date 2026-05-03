@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import * as QRCode from 'qrcode';
 import * as bcrypt from 'bcryptjs';
-import { PrismaService } from '../../config/prisma.service';
+import type { PrismaService } from '../../config/prisma.service';
 import { generateSlug, BRANCH_LIMITS } from '@tableo/utils';
 import type { CreateBranchDto } from './dto/create-branch.dto';
 import type { UpdateBranchDto } from './dto/update-branch.dto';
@@ -38,7 +38,7 @@ export class BranchesService {
     const tempPassword = `Tableo${Math.floor(1000 + Math.random() * 9000)}!`;
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       // 1. Ensure manager user exists
       let user = await tx.user.findUnique({ where: { email: managerEmail.toLowerCase() } });
       const isNewUser = !user;
@@ -74,7 +74,7 @@ export class BranchesService {
 
       return {
         ...branch,
-        managerPassword: isNewUser ? tempPassword : null, 
+        managerPassword: isNewUser ? tempPassword : null,
       };
     });
   }

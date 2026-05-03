@@ -21,7 +21,7 @@
     "db:migrate": "turbo run db:migrate",
     "db:seed": "turbo run db:seed",
     "db:studio": "cd apps/api && npx prisma studio",
-    "prepare": "husky"
+    "prepare": "if [ \"$RENDER\" = \"true\" ]; then exit 0; else husky; fi"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",

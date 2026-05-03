@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../config/prisma.service';
+import type { PrismaService } from '../../config/prisma.service';
 import { yesterdayString, toDateString } from '@tableo/utils';
 import type { QueryAnalyticsDto } from './dto/query-analytics.dto';
 
@@ -48,20 +48,20 @@ export class AnalyticsService {
     });
 
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+    const totalRevenue = orders.reduce((sum: number, o: any) => sum + Number(o.total), 0);
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     // Orders by hour
     const ordersByHour: Record<number, number> = {};
-    orders.forEach((o) => {
+    orders.forEach((o: any) => {
       const hour = o.createdAt.getHours();
       ordersByHour[hour] = (ordersByHour[hour] ?? 0) + 1;
     });
 
     // Top items
     const itemCounts: Record<string, { name: string; qty: number; revenue: number }> = {};
-    orders.forEach((o) => {
-      o.orderItems.forEach((item) => {
+    orders.forEach((o: any) => {
+      o.orderItems.forEach((item: any) => {
         if (!itemCounts[item.menuItemId]) {
           itemCounts[item.menuItemId] = {
             name: item.nameSnapshot,
@@ -70,8 +70,7 @@ export class AnalyticsService {
           };
         }
         itemCounts[item.menuItemId]!.qty += item.quantity;
-        itemCounts[item.menuItemId]!.revenue +=
-          Number(item.unitPrice) * item.quantity;
+        itemCounts[item.menuItemId]!.revenue += Number(item.unitPrice) * item.quantity;
       });
     });
 
@@ -87,7 +86,7 @@ export class AnalyticsService {
       ready: 0,
       done: 0,
     };
-    orders.forEach((o) => {
+    orders.forEach((o: any) => {
       if (o.status in statusCounts) {
         statusCounts[o.status as keyof typeof statusCounts]++;
       }
@@ -124,18 +123,18 @@ export class AnalyticsService {
     });
 
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+    const totalRevenue = orders.reduce((sum: number, o: any) => sum + Number(o.total), 0);
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     const ordersByHour: Record<number, number> = {};
-    orders.forEach((o) => {
+    orders.forEach((o: any) => {
       const hour = o.createdAt.getHours();
       ordersByHour[hour] = (ordersByHour[hour] ?? 0) + 1;
     });
 
     const itemCounts: Record<string, { name: string; qty: number; revenue: number }> = {};
-    orders.forEach((o) => {
-      o.orderItems.forEach((item) => {
+    orders.forEach((o: any) => {
+      o.orderItems.forEach((item: any) => {
         if (!itemCounts[item.menuItemId]) {
           itemCounts[item.menuItemId] = {
             name: item.nameSnapshot,
@@ -144,8 +143,7 @@ export class AnalyticsService {
           };
         }
         itemCounts[item.menuItemId]!.qty += item.quantity;
-        itemCounts[item.menuItemId]!.revenue +=
-          Number(item.unitPrice) * item.quantity;
+        itemCounts[item.menuItemId]!.revenue += Number(item.unitPrice) * item.quantity;
       });
     });
 
@@ -192,7 +190,7 @@ export class AnalyticsService {
     );
 
     const results = await Promise.allSettled(
-      branches.map((b) => this.generateDailySnapshot(b.id, yesterday)),
+      branches.map((b: any) => this.generateDailySnapshot(b.id, yesterday)),
     );
 
     const succeeded = results.filter((r) => r.status === 'fulfilled').length;
