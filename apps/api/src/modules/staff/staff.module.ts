@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from '../../config/prisma.module';
 import { StaffController } from './staff.controller';
 import { StaffService } from './staff.service';
 
 @Module({
+  imports: [PrismaModule],
   controllers: [StaffController],
   providers: [StaffService],
   exports: [StaffService],

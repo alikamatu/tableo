@@ -15,10 +15,13 @@ import type { UpdateBranchDto } from './dto/update-branch.dto';
 @Injectable()
 export class BranchesService {
   private readonly logger = new Logger(BranchesService.name);
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(restaurantId: string, ownerId: string, dto: CreateBranchDto) {
-    const { managerEmail, managerName, ...branchData } = dto;
+    const { managerEmail, managerName, ...branchData } = dto as CreateBranchDto & {
+      managerEmail?: string;
+      managerName?: string;
+    };
 
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -38,52 +41,37 @@ export class BranchesService {
     const tempPassword = `Tableo${Math.floor(1000 + Math.random() * 9000)}!`;
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-    return this.prisma.$transaction(async (tx: any) => {
-      // 1. Ensure manager user exists
-      let user = await tx.user.findUnique({ where: { email: managerEmail.toLowerCase() } });
+    return this.prisma.$transaction(async (tx) => {
+      let user = await tx.user.findUnique({ where: { email: (managerEmail ?? '').toLowerCase() } });
       const isNewUser = !user;
 
-      if (!user) {
+      if (!user && managerEmail) {
         user = await tx.user.create({
           data: {
             email: managerEmail.toLowerCase(),
-            fullName: managerName,
+            fullName: managerName ?? 'Branch Manager',
             passwordHash,
-            onboardComplete: true, // Managers don't need onboarding flow
+            onboardComplete: true,
           },
         });
       }
 
-      // 2. Create the branch
       const branch = await tx.branch.create({
-        data: {
-          slug,
-          ...branchData,
-          restaurantId,
-        },
+        data: { slug, ...branchData, restaurantId },
       });
 
-      // 3. Link as manager
-      await tx.staffMember.create({
-        data: {
-          branchId: branch.id,
-          userId: user.id,
-          role: 'manager',
-        },
-      });
+      if (user) {
+        await tx.staffMember.create({
+          data: { branchId: branch.id, userId: user.id, role: 'manager' },
+        });
+      }
 
-      return {
-        ...branch,
-        managerPassword: isNewUser ? tempPassword : null,
-      };
+      return { ...branch, managerPassword: isNewUser ? tempPassword : null };
     });
   }
 
   findAllByRestaurant(restaurantId: string) {
-    return this.prisma.branch.findMany({
-      where: { restaurantId },
-      orderBy: { createdAt: 'asc' },
-    });
+    return this.prisma.branch.findMany({ where: { restaurantId }, orderBy: { createdAt: 'asc' } });
   }
 
   async findOne(id: string) {
