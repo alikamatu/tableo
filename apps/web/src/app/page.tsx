@@ -12,14 +12,13 @@ import Hero from '@/components/landing/Hero';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-bg font-sans selection:bg-brand/10 selection:text-brand antialiased">
+    <div className="min-h-screen bg-bg font-sans antialiased selection:bg-brand/10 selection:text-brand">
       <Navbar />
-      
+
       <main id="main-content">
         <Hero />
-        
+
         <div className="relative">
-          {/* LogoTicker acts as social proof divider */}
           <LogoTicker />
         </div>
 
