@@ -46,10 +46,11 @@ function yesterdayString() {
 }
 // ─── Currency ─────────────────────────────────────────────────────────────────
 function formatGHS(amount) {
+    const value = Number.isFinite(amount) ? amount : 0;
     return new Intl.NumberFormat('en-GH', {
         style: 'currency',
         currency: 'GHS',
-    }).format(amount);
+    }).format(value);
 }
 // ─── Plan rank ────────────────────────────────────────────────────────────────
 exports.PLAN_RANK = {

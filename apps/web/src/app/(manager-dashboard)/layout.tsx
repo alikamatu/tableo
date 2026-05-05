@@ -1,13 +1,12 @@
 'use client';
 
-import * as React from 'react';
-import { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/shared/Sidebar';
-import { Topbar } from '@/components/shared/Topbar';
-import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
-import { VerificationBanner } from '@/components/shared/VerificationBanner';
+import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/stores/store';
 import { setCurrentBranch } from '@/stores/branchSlice';
+import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
+import { ManagerSidebar } from '@/components/manager/ManagerSidebar';
+import { ManagerTopbar } from '@/components/manager/ManagerTopbar';
+import { VerificationBanner } from '@/components/shared/VerificationBanner';
 
 export default function ManagerLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,23 +14,24 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
   const { user } = useAppSelector((s) => s.auth);
   const { current: branch } = useAppSelector((s) => s.branch);
 
-  // Auto-select the manager's branch on load
   useEffect(() => {
-    if (user?.staffMember?.branchId && (!branch || branch.id !== user.staffMember.branchId)) {
-      dispatch(setCurrentBranch({
-        id: user.staffMember.branchId,
-        name: user.staffMember.branch.name,
-        restaurantId: user.staffMember.branch.restaurantId,
-        slug: '', // We don't have the slug here but it's fine for context
-        isActive: true,
-      } as any));
+    const sm = user?.staffMember;
+    if (sm?.branchId && (!branch || branch.id !== sm.branchId)) {
+      dispatch(
+        setCurrentBranch({
+          id: sm.branchId,
+          name: sm.branch.name,
+          restaurantId: sm.branch.restaurantId,
+          slug: '',
+          isActive: true,
+        } as never),
+      );
     }
   }, [user?.staffMember, branch, dispatch]);
 
   return (
     <ProtectedRoute>
       <div className="flex h-screen overflow-hidden bg-bg">
-
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div
@@ -48,18 +48,15 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
           ].join(' ')}
         >
-          <Sidebar mode="manager" />
+          <ManagerSidebar onClose={() => setSidebarOpen(false)} />
         </div>
 
-        {/* Right pane */}
-        <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        {/* Content */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <VerificationBanner />
-          <Topbar onToggleSidebar={() => setSidebarOpen((o) => !o)} mode="manager" />
-          <main className="flex-1 overflow-y-auto px-5 py-6 lg:px-8 lg:py-7">
-            {children}
-          </main>
+          <ManagerTopbar onToggle={() => setSidebarOpen((o) => !o)} />
+          <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
-
       </div>
     </ProtectedRoute>
   );

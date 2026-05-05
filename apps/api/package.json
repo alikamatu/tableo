@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "predev": "npm run build",
-    "dev": "node dist/apps/api/src/main.js",
+    "dev": "nest start --watch",
     "start": "node dist/apps/api/src/main.js",
-    "start:dev": "nest start --watch",
+    "start:dev": "npm run dev",
     "build": "prisma generate && nest build",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",
