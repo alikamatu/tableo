@@ -4,10 +4,11 @@ import {
   ForbiddenException,
   BadRequestException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import * as QRCode from 'qrcode';
 import * as bcrypt from 'bcryptjs';
-import type { PrismaService } from '../../config/prisma.service';
+import { PrismaService } from '../../config/prisma.service';
 import { generateSlug, BRANCH_LIMITS } from '@tableo/utils';
 import type { CreateBranchDto } from './dto/create-branch.dto';
 import type { UpdateBranchDto } from './dto/update-branch.dto';
@@ -15,7 +16,7 @@ import type { UpdateBranchDto } from './dto/update-branch.dto';
 @Injectable()
 export class BranchesService {
   private readonly logger = new Logger(BranchesService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async create(restaurantId: string, ownerId: string, dto: CreateBranchDto) {
     const { managerEmail, managerName, ...branchData } = dto as CreateBranchDto & {
