@@ -124,7 +124,6 @@ const initialState: OnboardingState = {
 
 // ─── Thunks ───────────────────────────────────────────────────────────────────
 
-/** Load state from API (resumes where user left off) */
 export const loadOnboardingState = createAsyncThunk(
   'onboarding/loadState',
   async (_, { rejectWithValue }) => {
