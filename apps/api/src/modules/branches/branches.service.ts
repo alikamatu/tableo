@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import * as QRCode from 'qrcode';
 import * as bcrypt from 'bcryptjs';
-import { PrismaService } from '../../config/prisma.service';
+import type { PrismaService } from '../../config/prisma.service';
 import { generateSlug, BRANCH_LIMITS } from '@tableo/utils';
 import type { CreateBranchDto } from './dto/create-branch.dto';
 import type { UpdateBranchDto } from './dto/update-branch.dto';
