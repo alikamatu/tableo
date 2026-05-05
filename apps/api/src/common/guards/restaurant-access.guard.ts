@@ -1,6 +1,6 @@
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Injectable, ForbiddenException } from '@nestjs/common';
-import type { PrismaService } from '../../config/prisma.service';
+import { PrismaService } from '../../config/prisma.service';
 import type { JwtPayload } from '@tableo/types';
 
 @Injectable()

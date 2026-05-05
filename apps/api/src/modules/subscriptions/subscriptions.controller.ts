@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
-import type { SubscriptionsService } from './subscriptions.service';
+import { SubscriptionsService } from './subscriptions.service';
 import type { InitSubscriptionDto } from './dto/init-subscription.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';

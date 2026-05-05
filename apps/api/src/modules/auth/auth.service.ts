@@ -5,13 +5,13 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import type { JwtService } from '@nestjs/jwt';
-import type { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
-import type { PrismaService } from '../../config/prisma.service';
-import type { EmailService } from './email.service';
+import { PrismaService } from '../../config/prisma.service';
+import { EmailService } from './email.service';
 import type { JwtPayload, JwtTokens } from '@tableo/types';
 import type { RegisterDto } from './dto/register.dto';
 import type { ForgotPasswordDto } from './dto/forgot-password.dto';

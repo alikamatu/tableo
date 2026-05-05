@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { PrismaService } from '../../config/prisma.service';
+import { PrismaService } from '../../config/prisma.service';
 import { yesterdayString, toDateString } from '@tableo/utils';
 import type { QueryAnalyticsDto } from './dto/query-analytics.dto';
 

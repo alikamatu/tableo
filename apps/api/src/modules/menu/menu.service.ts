@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import type { PrismaService } from '../../config/prisma.service';
+import { PrismaService } from '../../config/prisma.service';
 import type { CreateCategoryDto } from './dto/create-category.dto';
 import type { UpdateCategoryDto } from './dto/update-category.dto';
 import type { CreateMenuItemDto } from './dto/create-menu-item.dto';

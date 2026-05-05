@@ -5,7 +5,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Response as ExpressResponse } from 'express';
 import type { User } from '@prisma/client';
 
-import type { AuthService } from './auth.service';
+import { AuthService } from './auth.service';
 import type { RegisterDto } from './dto/register.dto';
 import type { ForgotPasswordDto } from './dto/forgot-password.dto';
 import type { ResetPasswordDto } from './dto/reset-password.dto';
