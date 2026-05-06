@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * Google OAuth strategy — optional.
@@ -27,7 +27,7 @@ try {
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   private readonly logger = new Logger(GoogleStrategy.name);
 
-  constructor(config: ConfigService) {
+  constructor(@Inject(ConfigService) config: ConfigService) {
     const clientID = config.get<string>('GOOGLE_CLIENT_ID') ?? 'noop';
     const clientSecret = config.get<string>('GOOGLE_CLIENT_SECRET') ?? 'noop';
     const callbackURL =

@@ -1,11 +1,22 @@
-import { Body, Controller, Get, Post, Query, Request, Res, UseGuards, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Post,
+  Query,
+  Request,
+  Res,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Response as ExpressResponse } from 'express';
 import type { User } from '@prisma/client';
 
-import type { AuthService } from './auth.service';
+import { AuthService } from './auth.service';
 import type { RegisterDto } from './dto/register.dto';
 import type { ForgotPasswordDto } from './dto/forgot-password.dto';
 import type { ResetPasswordDto } from './dto/reset-password.dto';
@@ -19,7 +30,7 @@ import { clearAuthCookies, setAuthCookies } from './auth-cookies';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(@Inject(AuthService) private auth: AuthService) {}
 
   // ─── Register ──────────────────────────────────────────────────────────────
 
