@@ -20,7 +20,9 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const part = token.split('.')[1];
     if (!part) return null;
-    const json = atob(part.replace(/-/g, '+').replace(/_/g, '/'));
+    const normalized = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    const json = atob(padded);
     return JSON.parse(
       decodeURIComponent(
         json
@@ -32,6 +34,15 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function redirectWithPreservedAuthParam(request: NextRequest, targetPath: string) {
+  const target = new URL(targetPath, request.url);
+  const authenticated = request.nextUrl.searchParams.get('authenticated');
+  if (authenticated === 'true') {
+    target.searchParams.set('authenticated', 'true');
+  }
+  return NextResponse.redirect(target);
 }
 
 export function middleware(request: NextRequest) {
@@ -52,6 +63,10 @@ export function middleware(request: NextRequest) {
   // Unauthenticated → login
   if (!hasSession) {
     const url = new URL('/login', request.url);
+    const authenticated = request.nextUrl.searchParams.get('authenticated');
+    if (authenticated === 'true') {
+      url.searchParams.set('authenticated', 'true');
+    }
     if (pathname !== '/') url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
@@ -67,22 +82,22 @@ export function middleware(request: NextRequest) {
   if (AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
     // Redirect to the right home for their role
     const home = isStaff ? MGR_DASHBOARD : OWNER_DASHBOARD;
-    return NextResponse.redirect(new URL(home, request.url));
+    return redirectWithPreservedAuthParam(request, home);
   }
 
   // ── Owner flow ────────────────────────────────────────────────────────────
   if (!isStaff) {
     // Not onboarded → push to onboarding (except onboarding itself)
     if (!onboardComplete && !pathname.startsWith(ONBOARDING))
-      return NextResponse.redirect(new URL(ONBOARDING, request.url));
+      return redirectWithPreservedAuthParam(request, ONBOARDING);
 
     // Onboarded + hitting onboarding → push to dashboard
     if (onboardComplete && pathname.startsWith(ONBOARDING))
-      return NextResponse.redirect(new URL(OWNER_DASHBOARD, request.url));
+      return redirectWithPreservedAuthParam(request, OWNER_DASHBOARD);
 
     // Staff trying to access manager dashboard → push to owner dashboard
     if (pathname.startsWith(MGR_DASHBOARD))
-      return NextResponse.redirect(new URL(OWNER_DASHBOARD, request.url));
+      return redirectWithPreservedAuthParam(request, OWNER_DASHBOARD);
 
     return NextResponse.next();
   }
@@ -90,11 +105,11 @@ export function middleware(request: NextRequest) {
   // ── Staff flow ────────────────────────────────────────────────────────────
   // Staff members should never access the owner dashboard or onboarding
   if (pathname.startsWith(OWNER_DASHBOARD) || pathname.startsWith(ONBOARDING))
-    return NextResponse.redirect(new URL(MGR_DASHBOARD, request.url));
+    return redirectWithPreservedAuthParam(request, MGR_DASHBOARD);
 
   // Cashier / kitchen trying to access manager-only pages
   if (staffRole !== 'manager' && pathname.startsWith(`${MGR_DASHBOARD}/staff`))
-    return NextResponse.redirect(new URL(MGR_DASHBOARD, request.url));
+    return redirectWithPreservedAuthParam(request, MGR_DASHBOARD);
 
   return NextResponse.next();
 }
