@@ -30,9 +30,34 @@ export const tokenStore = {
 
 // ─── Session marker (localStorage — no token value stored) ───────────────────
 
+const SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
+
+/**
+ * Mark session in localStorage AND set a lightweight browser-domain cookie
+ * so the Next.js middleware (running on the Vercel edge) can detect the
+ * session without needing the httpOnly refresh_token (which lives on the
+ * API domain and is invisible to the frontend middleware).
+ */
 export function markSession(): void {
   if (typeof window === 'undefined') return;
-  try { localStorage.setItem(SESSION_KEY, '1'); } catch {}
+  try {
+    localStorage.setItem(SESSION_KEY, '1');
+    document.cookie = `has_session=1; path=/; max-age=${SESSION_COOKIE_MAX_AGE}; SameSite=Lax`;
+  } catch {}
+}
+
+/**
+ * Write routing-hint cookies (non-sensitive flags) so the middleware can
+ * route to the right page (onboarding vs dashboard vs manager-dashboard)
+ * without decoding the API-domain JWT.
+ */
+export function setSessionCookies(onboardComplete: boolean, staffRole?: string | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const flags = `path=/; max-age=${SESSION_COOKIE_MAX_AGE}; SameSite=Lax`;
+    document.cookie = `onboard_complete=${onboardComplete}; ${flags}`;
+    document.cookie = `staff_role=${staffRole ?? ''}; ${flags}`;
+  } catch {}
 }
 
 export function clearSession(): void {
@@ -40,6 +65,11 @@ export function clearSession(): void {
   if (typeof window !== 'undefined') {
     try {
       localStorage.removeItem(SESSION_KEY);
+      // Clear middleware routing cookies
+      const expired = 'path=/; max-age=0; SameSite=Lax';
+      document.cookie = `has_session=; ${expired}`;
+      document.cookie = `onboard_complete=; ${expired}`;
+      document.cookie = `staff_role=; ${expired}`;
       // Legacy cleanup
       localStorage.removeItem('tableo_refresh_token');
       localStorage.removeItem('tableo_session_marker');
@@ -49,7 +79,11 @@ export function clearSession(): void {
 
 export function hasSessionMarker(): boolean {
   if (typeof window === 'undefined') return false;
-  try { return localStorage.getItem(SESSION_KEY) === '1'; } catch { return false; }
+  try {
+    return localStorage.getItem(SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -61,7 +95,7 @@ export function clearAllState(): void {
   try {
     // 1. Clear tokens and markers
     clearSession();
-    
+
     // 2. Clear all other session data
     sessionStorage.clear();
 

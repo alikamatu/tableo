@@ -106,19 +106,16 @@ export class AuthController {
     const user = await this.auth.validateGoogleUser(req.user);
     const { refreshToken, user: userData } = await this.auth.login(user.id);
 
+    // Set httpOnly refresh_token cookie on the API domain (SameSite=None in prod
+    // so the browser includes it in cross-origin withCredentials CORS requests).
     setAuthCookies(res, refreshToken, userData.onboardComplete ?? false);
 
-    // Redirect to frontend dashboard or onboarding
-    let redirectUrl = !userData.onboardComplete
-      ? `${process.env['APP_URL']}/onboarding`
-      : userData.staffMember
-        ? `${process.env['APP_URL']}/manager-dashboard`
-        : `${process.env['APP_URL']}/dashboard`;
-
-    // Add success flag so frontend knows to set session marker
-    redirectUrl += redirectUrl.includes('?') ? '&authenticated=true' : '?authenticated=true';
-
-    res.redirect(redirectUrl);
+    // Redirect to the dedicated OAuth callback page on the frontend.
+    // That page is PUBLIC (no middleware auth check), calls initAuth() client-side
+    // via withCredentials CORS (which sends the cookie set above), and then
+    // navigates to the correct destination once the session is established.
+    const frontendUrl = (process.env['APP_URL'] ?? 'http://localhost:3000').replace(/\/$/, '');
+    res.redirect(`${frontendUrl}/auth/google/callback`);
   }
 
   // ─── Verify email ──────────────────────────────────────────────────────────

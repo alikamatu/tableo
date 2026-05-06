@@ -1,6 +1,12 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import api from '@/lib/api';
-import { tokenStore, markSession, clearSession, hasSessionMarker } from '@/lib/tokens';
+import {
+  tokenStore,
+  markSession,
+  clearSession,
+  hasSessionMarker,
+  setSessionCookies,
+} from '@/lib/tokens';
 import { normalizeError, type NormalizedError } from '@/lib/api-error';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -63,7 +69,10 @@ export const initAuth = createAsyncThunk('auth/init', async (_, { rejectWithValu
 
     // 3. Fetch the user with the new token
     const { data: m } = await api.get('/auth/me');
-    return m.data as AuthUser;
+    const user = m.data as AuthUser;
+    // Keep browser-domain routing cookies in sync so middleware can route correctly
+    setSessionCookies(user.onboardComplete, user.staffMember?.role);
+    return user;
   } catch (err) {
     // Both existing token and refresh failed → wipe session
     clearSession();
@@ -76,9 +85,11 @@ export const login = createAsyncThunk(
   async (payload: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const { data } = await api.post('/auth/login', payload, { withCredentials: true });
+      const user = data.data.user as AuthUser;
       tokenStore.set(data.data.accessToken);
       markSession();
-      return data.data.user as AuthUser;
+      setSessionCookies(user.onboardComplete, user.staffMember?.role);
+      return user;
     } catch (err) {
       return rejectWithValue(normalizeError(err));
     }
@@ -93,9 +104,11 @@ export const register = createAsyncThunk(
   ) => {
     try {
       const { data } = await api.post('/auth/register', payload, { withCredentials: true });
+      const user = data.data.user as AuthUser;
       tokenStore.set(data.data.accessToken);
       markSession();
-      return data.data.user as AuthUser;
+      setSessionCookies(user.onboardComplete, user.staffMember?.role);
+      return user;
     } catch (err) {
       return rejectWithValue(normalizeError(err));
     }

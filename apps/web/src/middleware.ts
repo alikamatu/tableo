@@ -9,32 +9,12 @@ const PUBLIC_ROUTES = [
   '/reset-password',
   '/verify-email',
   '/menu',
+  '/auth/google/callback', // Google OAuth landing — bootstraps session client-side
 ];
 const AUTH_ROUTES = ['/login', '/register'];
 const OWNER_DASHBOARD = '/dashboard';
 const MGR_DASHBOARD = '/manager-dashboard';
 const ONBOARDING = '/onboarding';
-
-/** Decode JWT payload without verifying (Edge runtime only — no crypto libs) */
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const part = token.split('.')[1];
-    if (!part) return null;
-    const normalized = part.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
-    const json = atob(padded);
-    return JSON.parse(
-      decodeURIComponent(
-        json
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join(''),
-      ),
-    );
-  } catch {
-    return null;
-  }
-}
 
 function redirectWithPreservedAuthParam(request: NextRequest, targetPath: string) {
   const target = new URL(targetPath, request.url);
@@ -57,26 +37,23 @@ export function middleware(request: NextRequest) {
   );
   if (isPublic) return NextResponse.next();
 
-  const refreshToken = request.cookies.get('refresh_token')?.value;
-  const hasSession = !!refreshToken;
+  // has_session is a lightweight cookie written by the frontend JS (markSession())
+  // on the Vercel domain. The httpOnly refresh_token lives on the API domain and
+  // is invisible here — this cookie is the middleware's only way to know about auth.
+  const hasSession = !!request.cookies.get('has_session')?.value;
 
   // Unauthenticated → login
   if (!hasSession) {
     const url = new URL('/login', request.url);
-    const authenticated = request.nextUrl.searchParams.get('authenticated');
-    if (authenticated === 'true') {
-      url.searchParams.set('authenticated', 'true');
-    }
     if (pathname !== '/') url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
 
-  // Decode the refresh token to read role flags
-  // (We use the refresh token because it lives in cookies; access token is memory-only)
-  const payload = decodeJwtPayload(refreshToken);
-  const onboardComplete = (payload?.onboardComplete as boolean) ?? true;
-  const isStaff = !!payload?.staffRole;
-  const staffRole = payload?.staffRole as string | undefined;
+  // Routing-hint cookies (non-sensitive flags) written by setSessionCookies()
+  // after a successful login / initAuth. Default to safe values if not yet set.
+  const onboardComplete = request.cookies.get('onboard_complete')?.value !== 'false';
+  const staffRole = request.cookies.get('staff_role')?.value || undefined;
+  const isStaff = !!staffRole;
 
   // ── Auth-only pages (login / register) ────────────────────────────────────
   if (AUTH_ROUTES.some((r) => pathname.startsWith(r))) {

@@ -2,15 +2,12 @@
 
 import * as React from 'react';
 import { SocialAuthButton } from './SocialAuthButton';
-import { markSession } from '@/lib/tokens';
 
 export function GoogleLoginButton({ label = 'Continue with Google' }: { label?: string }) {
   const handleLogin = () => {
-    // Pre-mark session so InitAuth attempts refresh right after OAuth redirect.
-    // If OAuth fails/cancels, initAuth will clear the marker on refresh failure.
-    markSession();
-
-    // Navigate to the API endpoint for Google login
+    // Navigate to the API's Google OAuth entry point.
+    // Session marking happens in /auth/google/callback AFTER OAuth succeeds,
+    // so a cancelled flow doesn't leave a stale has_session cookie.
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000/api/v1';
     window.location.href = `${apiUrl}/auth/google`;
   };
