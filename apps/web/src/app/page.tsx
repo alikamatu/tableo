@@ -24,11 +24,8 @@ export default function HomePage() {
 
         <article className="relative z-10">
           <Features />
-
           <HowItWorks />
-
           <Pricing />
-
           <CTA />
         </article>
       </main>
