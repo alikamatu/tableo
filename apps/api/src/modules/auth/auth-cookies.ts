@@ -8,7 +8,10 @@ export function getCookieOptions(httpOnly = true) {
   return {
     httpOnly,
     secure: isProd,
-    sameSite: 'lax' as const,
+    // Cross-origin deployments (Vercel → Render) require sameSite:'none' so
+    // the browser stores the cookie from a cross-site API response.
+    // sameSite:'none' mandates secure:true, which is already set in production.
+    sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   };
