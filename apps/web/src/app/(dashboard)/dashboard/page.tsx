@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useAppSelector } from '@/stores/store';
 import { useRestaurant } from '@/hooks/use-restaurant';
 import {
+  Loader2,
   Users,
   Store,
   TrendingUp,
@@ -21,6 +22,14 @@ export default function DashboardPage() {
   const { user } = useAppSelector((s) => s.auth);
   const { current: restaurant, loading: restaurantsLoading } = useRestaurant();
   const reduceMotion = useReducedMotion();
+
+  if (restaurantsLoading && !restaurant) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
+      </div>
+    );
+  }
 
   const stats = [
     {
@@ -92,7 +101,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Welcome back, {user?.fullName?.split(' ')[0]} 👋
           </h1>
-          <p className="text-muted-foreground mt-1 font-medium">
+          <p className="mt-1 font-medium text-muted-foreground">
             Here&apos;s what&apos;s happening with {restaurant?.name || 'your restaurant'} today.
           </p>
         </div>
@@ -101,7 +110,7 @@ export default function DashboardPage() {
             <Clock size={16} />
             History
           </Button>
-          <Button className="shadow-primary/20 gap-2 shadow-lg">
+          <Button className="gap-2 shadow-lg shadow-primary/20">
             View Analytics
             <ArrowUpRight size={16} />
           </Button>
@@ -140,7 +149,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-muted-foreground text-sm font-medium">{stat.title}</p>
+                <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
                 <h3 className="mt-1 text-2xl font-bold text-foreground">{stat.value}</h3>
               </CardContent>
             </Card>
@@ -156,7 +165,7 @@ export default function DashboardPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-primary hover:text-primary hover:bg-primary/5"
+              className="text-primary hover:bg-primary/5 hover:text-primary"
             >
               View All
             </Button>
@@ -166,12 +175,12 @@ export default function DashboardPage() {
               {recentOrders.map((order, i) => (
                 <div key={i} className="group flex cursor-pointer items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="group-hover:bg-primary/10 group-hover:text-primary flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-bold transition-colors">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-bold transition-colors group-hover:bg-primary/10 group-hover:text-primary">
                       #{order.id}
                     </div>
                     <div>
                       <p className="text-sm font-bold text-foreground">{order.customer}</p>
-                      <p className="text-muted-foreground text-xs font-medium">{order.time}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{order.time}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -182,7 +191,7 @@ export default function DashboardPage() {
                           ? 'bg-emerald-500/10 text-emerald-600'
                           : order.status === 'In Preparation'
                             ? 'bg-orange-500/10 text-orange-600'
-                            : 'text-muted-foreground bg-muted'
+                            : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       {order.status}
@@ -195,7 +204,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Quick Actions / Tips */}
-        <Card className="bg-primary/5 border-primary/10 border border-none shadow-sm">
+        <Card className="border border-none border-primary/10 bg-primary/5 shadow-sm">
           <CardHeader className="p-6">
             <CardTitle className="flex items-center gap-2 text-lg font-bold">
               <Store className="text-primary" size={20} />
@@ -220,7 +229,7 @@ export default function DashboardPage() {
                   <div
                     className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
                       step.done
-                        ? 'bg-primary border-primary text-primary-foreground'
+                        ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-muted-foreground/30'
                     }`}
                   >
@@ -234,7 +243,7 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground mt-4 w-full py-6 font-bold">
+            <Button className="mt-4 w-full bg-primary py-6 font-bold text-primary-foreground hover:bg-primary/90">
               Complete Setup
             </Button>
           </CardContent>

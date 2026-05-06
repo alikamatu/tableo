@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import { createMenuItemSchema } from '@/lib/validations';
 import { Button } from '@/components/ui/Button';
@@ -86,7 +86,7 @@ function NewMenuItemPageInner() {
 
   if (!restaurant) {
     return (
-      <div className="text-muted-foreground py-20 text-center font-medium">
+      <div className="py-20 text-center font-medium text-muted-foreground">
         Select a restaurant first.
       </div>
     );
@@ -108,7 +108,7 @@ function NewMenuItemPageInner() {
         <CollapsibleSection title="Basics" defaultOpen>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                 Category
               </label>
               <Select
@@ -168,7 +168,7 @@ function NewMenuItemPageInner() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                   Size / price variants
                 </label>
                 <Button
@@ -187,7 +187,7 @@ function NewMenuItemPageInner() {
                 </Button>
               </div>
               {form.priceVariants.length === 0 ? (
-                <p className="text-muted-foreground text-xs">Optional. e.g. Small / Large.</p>
+                <p className="text-xs text-muted-foreground">Optional. e.g. Small / Large.</p>
               ) : (
                 <div className="space-y-3">
                   {form.priceVariants.map((row, i) => (
@@ -224,7 +224,7 @@ function NewMenuItemPageInner() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-destructive shrink-0"
+                        className="shrink-0 text-destructive"
                         aria-label="Remove variant"
                         onClick={() =>
                           setForm((f) => ({
@@ -246,7 +246,7 @@ function NewMenuItemPageInner() {
         <CollapsibleSection title="Dietary & labels">
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                 Badge
               </label>
               <Select
@@ -299,7 +299,7 @@ function NewMenuItemPageInner() {
         <CollapsibleSection title="Media">
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                 Hero image
               </label>
               <ImageUpload
@@ -311,7 +311,7 @@ function NewMenuItemPageInner() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                   Gallery
                 </label>
                 <Button
@@ -324,7 +324,7 @@ function NewMenuItemPageInner() {
                 </Button>
               </div>
               {form.galleryUrls.length === 0 ? (
-                <p className="text-muted-foreground text-xs">Optional extra photos.</p>
+                <p className="text-xs text-muted-foreground">Optional extra photos.</p>
               ) : (
                 <div className="space-y-4">
                   {form.galleryUrls.map((url, i) => (
@@ -382,7 +382,7 @@ function NewMenuItemPageInner() {
             <div className="flex flex-col gap-3 rounded-xl border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-foreground">Available</p>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-xs text-muted-foreground">
                   Turn off for sold-out without deleting.
                 </p>
               </div>
@@ -394,7 +394,7 @@ function NewMenuItemPageInner() {
             <div className="flex flex-col gap-3 rounded-xl border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-foreground">Featured</p>
-                <p className="text-muted-foreground text-xs">Highlight on marketing surfaces.</p>
+                <p className="text-xs text-muted-foreground">Highlight on marketing surfaces.</p>
               </div>
               <Switch
                 checked={form.isFeatured}
@@ -412,7 +412,9 @@ export default function NewMenuItemPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-muted-foreground py-20 text-center text-sm font-medium">Loading…</div>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
+        </div>
       }
     >
       <NewMenuItemPageInner />

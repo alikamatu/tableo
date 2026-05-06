@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Copy, Plus, Trash2 } from 'lucide-react';
+import { Copy, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import { createMenuItemSchema } from '@/lib/validations';
 import { Button } from '@/components/ui/Button';
@@ -158,7 +158,7 @@ export default function EditMenuItemPage() {
 
   if (!restaurant) {
     return (
-      <div className="text-muted-foreground py-20 text-center font-medium">
+      <div className="py-20 text-center font-medium text-muted-foreground">
         Select a restaurant first.
       </div>
     );
@@ -166,8 +166,8 @@ export default function EditMenuItemPage() {
 
   if (loading) {
     return (
-      <div className="text-muted-foreground py-20 text-center text-sm font-medium">
-        Loading item…
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
       </div>
     );
   }
@@ -189,11 +189,11 @@ export default function EditMenuItemPage() {
           type="button"
           variant="outline"
           size="sm"
-          startContent={<Copy size={16} />}
-          disabled={duplicating}
+          startContent={!duplicating && <Copy size={16} />}
+          loading={duplicating}
           onClick={handleDuplicate}
         >
-          {duplicating ? 'Duplicating…' : 'Duplicate item'}
+          Duplicate item
         </Button>
       </div>
 
@@ -201,7 +201,7 @@ export default function EditMenuItemPage() {
         <CollapsibleSection title="Basics" defaultOpen>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                 Category
               </label>
               <Select
@@ -255,7 +255,7 @@ export default function EditMenuItemPage() {
             />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                   Size / price variants
                 </label>
                 <Button
@@ -308,7 +308,7 @@ export default function EditMenuItemPage() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-destructive shrink-0"
+                        className="shrink-0 text-destructive"
                         aria-label="Remove variant"
                         onClick={() =>
                           setForm((f) => ({
@@ -323,7 +323,7 @@ export default function EditMenuItemPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-xs">No variants.</p>
+                <p className="text-xs text-muted-foreground">No variants.</p>
               )}
             </div>
           </div>
@@ -332,7 +332,7 @@ export default function EditMenuItemPage() {
         <CollapsibleSection title="Dietary & labels">
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                 Badge
               </label>
               <Select
@@ -383,7 +383,7 @@ export default function EditMenuItemPage() {
         <CollapsibleSection title="Media">
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                 Hero image
               </label>
               <ImageUpload
@@ -395,7 +395,7 @@ export default function EditMenuItemPage() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                   Gallery
                 </label>
                 <Button
@@ -472,10 +472,10 @@ export default function EditMenuItemPage() {
 
         <Card className="border-destructive/40">
           <CardHeader className="pb-2">
-            <CardTitle className="text-destructive text-base">Danger zone</CardTitle>
+            <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Permanently remove this dish from your menu.
             </p>
             <label className="flex cursor-pointer items-start gap-3 text-sm">
@@ -490,10 +490,11 @@ export default function EditMenuItemPage() {
             <Button
               variant="outline"
               className="border-destructive text-destructive"
-              disabled={!deleteAck || deleting}
+              disabled={!deleteAck}
+              loading={deleting}
               onClick={handleDelete}
             >
-              {deleting ? 'Deleting…' : 'Delete item'}
+              Delete item
             </Button>
           </CardContent>
         </Card>

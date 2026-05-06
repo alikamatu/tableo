@@ -104,6 +104,9 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [lastSynced, setLastSynced] = useState<Date>(new Date());
+  const [advancingId, setAdvancingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [modalActionLoading, setModalActionLoading] = useState(false);
   const containerRef = useRef(null);
 
   const parseOrdersResponse = (payload: unknown): Order[] => {
@@ -141,18 +144,22 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
     if (!branch) return;
     const next = NEXT_STATUS[order.status];
     if (!next) return;
+    setAdvancingId(order.id);
     try {
       await api.patch(`/branches/${branch.id}/orders/${order.id}/status`, { status: next });
       toast.success(`${next.toUpperCase()}`);
       load();
     } catch {
       toast.error('Update failed');
+    } finally {
+      setAdvancingId(null);
     }
   };
 
   const toggleCashPayment = async (order: Order) => {
     if (!branch || order.paymentMethod !== 'counter') return;
     const nextStatus = order.paymentStatus === 'paid' ? 'unpaid' : 'paid';
+    setModalActionLoading(true);
     try {
       await api.patch(`/branches/${branch.id}/orders/${order.id}/payment`, {
         paymentStatus: nextStatus,
@@ -161,27 +168,35 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
       load();
     } catch {
       toast.error('Payment update failed');
+    } finally {
+      setModalActionLoading(false);
     }
   };
 
   const cancelOrder = async (order: Order) => {
     if (!branch) return;
+    setCancellingId(order.id);
     try {
       await api.patch(`/branches/${branch.id}/orders/${order.id}/status`, { status: 'cancelled' });
       toast.success('CANCELLED');
       load();
     } catch {
       toast.error('Action failed');
+    } finally {
+      setCancellingId(null);
     }
   };
 
   const verifyOnlinePayment = async (order: Order) => {
+    setModalActionLoading(true);
     try {
       await api.post(`/orders/${order.id}/verify-paystack`, {});
       toast.success('Payment verified');
       load();
     } catch {
       toast.error('Verification failed');
+    } finally {
+      setModalActionLoading(false);
     }
   };
 
@@ -231,14 +246,14 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
   if ((restLoading || branchLoading) && !branch) {
     return (
       <div className="flex items-center justify-center py-32">
-        <Loader2 className="text-primary animate-spin" size={32} />
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     );
   }
 
   if (!branch)
     return (
-      <div className="text-muted-foreground py-20 text-center font-medium italic">
+      <div className="py-20 text-center font-medium italic text-muted-foreground">
         Please select a branch to manage orders.
       </div>
     );
@@ -268,13 +283,13 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.02 }}
         >
-          <Card className="bg-primary/5 border-border/80">
+          <Card className="border-border/80 bg-primary/5">
             <CardContent className="flex items-center gap-3 p-3 sm:p-4">
-              <div className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <ShoppingCart size={18} strokeWidth={1.75} />
               </div>
               <div>
-                <p className="text-muted-foreground text-xs">Today</p>
+                <p className="text-xs text-muted-foreground">Today</p>
                 <p className="text-lg tabular-nums text-foreground sm:text-xl">
                   {todayOrders.length}
                 </p>
@@ -293,7 +308,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                 <Clock3 size={18} strokeWidth={1.75} />
               </div>
               <div>
-                <p className="text-muted-foreground text-xs">Pending</p>
+                <p className="text-xs text-muted-foreground">Pending</p>
                 <p className="text-lg tabular-nums text-foreground sm:text-xl">{pendingCount}</p>
               </div>
             </CardContent>
@@ -310,7 +325,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                 <Wallet size={18} strokeWidth={1.75} />
               </div>
               <div>
-                <p className="text-muted-foreground text-xs">Revenue today</p>
+                <p className="text-xs text-muted-foreground">Revenue today</p>
                 <p className="text-base tabular-nums text-foreground sm:text-lg">
                   {formatGHS(revenue)}
                 </p>
@@ -322,16 +337,16 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="bg-primary/10 text-primary mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <ClipboardList size={18} strokeWidth={1.75} />
           </div>
           <div>
             <h1 className="text-lg font-medium tracking-tight text-foreground sm:text-xl">
               {title}
             </h1>
-            <p className="text-muted-foreground mt-0.5 text-sm">
+            <p className="mt-0.5 text-sm text-muted-foreground">
               {branch.name}
-              <span className="text-muted-foreground/60 ml-2 text-xs tabular-nums">
+              <span className="ml-2 text-xs tabular-nums text-muted-foreground/60">
                 · {format(lastSynced, 'HH:mm:ss')}
               </span>
             </p>
@@ -365,10 +380,10 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
       {orders.length === 0 && !loading ? (
         <Card className="border-dashed border-border/80 bg-muted/10">
           <CardContent className="flex flex-col items-center gap-4 py-16 text-center sm:py-20">
-            <div className="text-muted-foreground flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-muted text-muted-foreground">
               <ShoppingCart size={26} strokeWidth={1.75} />
             </div>
-            <p className="text-muted-foreground text-sm">No orders for this filter.</p>
+            <p className="text-sm text-muted-foreground">No orders for this filter.</p>
           </CardContent>
         </Card>
       ) : (
@@ -397,7 +412,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                             <p className="text-sm tabular-nums text-foreground">
                               #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                             </p>
-                            <p className="text-muted-foreground mt-0.5 text-xs">
+                            <p className="mt-0.5 text-xs text-muted-foreground">
                               {format(new Date(order.createdAt), 'MMM d, HH:mm')}
                             </p>
                           </div>
@@ -411,7 +426,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                             {cfg.label}
                           </Badge>
                         </div>
-                        <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <UserIcon size={14} strokeWidth={1.75} />
                           <span className="truncate">
                             {order.customerName || 'Walk-in'}
@@ -430,6 +445,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                               <Button
                                 size="sm"
                                 className="h-8 px-3 text-xs"
+                                loading={advancingId === order.id}
                                 onClick={() => advanceStatus(order)}
                               >
                                 Next
@@ -446,30 +462,30 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
           </div>
 
           {/* Desktop: table */}
-          <div className="bg-card hidden overflow-hidden rounded-xl border border-border/80 md:block">
+          <div className="hidden overflow-hidden rounded-xl border border-border/80 bg-card md:block">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/25">
-                    <th className="text-muted-foreground px-4 py-3 text-left text-xs font-medium lg:px-6">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground lg:px-6">
                       Order
                     </th>
-                    <th className="text-muted-foreground px-4 py-3 text-left text-xs font-medium lg:px-6">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground lg:px-6">
                       Customer
                     </th>
-                    <th className="text-muted-foreground px-4 py-3 text-left text-xs font-medium lg:px-6">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground lg:px-6">
                       Type
                     </th>
-                    <th className="text-muted-foreground px-4 py-3 text-center text-xs font-medium lg:px-6">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground lg:px-6">
                       Status
                     </th>
-                    <th className="text-muted-foreground px-4 py-3 text-right text-xs font-medium lg:px-6">
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground lg:px-6">
                       Total
                     </th>
-                    <th className="text-muted-foreground px-4 py-3 text-center text-xs font-medium lg:px-6">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground lg:px-6">
                       Pay
                     </th>
-                    <th className="text-muted-foreground px-4 py-3 text-right text-xs font-medium lg:px-6">
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground lg:px-6">
                       Actions
                     </th>
                   </tr>
@@ -494,21 +510,21 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                               <span className="text-sm tabular-nums text-foreground">
                                 #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                               </span>
-                              <span className="text-muted-foreground mt-0.5 text-xs">
+                              <span className="mt-0.5 text-xs text-muted-foreground">
                                 {format(new Date(order.createdAt), 'MMM d, HH:mm')}
                               </span>
                             </div>
                           </td>
                           <td className="px-4 py-3 lg:px-6">
                             <div className="flex items-center gap-2">
-                              <div className="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg bg-muted/80">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/80 text-muted-foreground">
                                 <UserIcon size={14} strokeWidth={1.75} />
                               </div>
                               <div className="flex min-w-0 flex-col">
                                 <span className="truncate text-xs text-foreground">
                                   {order.customerName || 'Walk-in'}
                                 </span>
-                                <span className="text-muted-foreground text-[11px]">
+                                <span className="text-[11px] text-muted-foreground">
                                   {order.tableNumber
                                     ? `Table ${order.tableNumber}`
                                     : 'Pickup / online'}
@@ -545,7 +561,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                               >
                                 {order.paymentStatus}
                               </Badge>
-                              <span className="text-muted-foreground text-[10px] opacity-70">
+                              <span className="text-[10px] text-muted-foreground opacity-70">
                                 {order.paymentMethod}
                               </span>
                             </div>
@@ -559,6 +575,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                                 <Button
                                   size="sm"
                                   className="h-8 px-3 text-xs"
+                                  loading={advancingId === order.id}
                                   onClick={() => advanceStatus(order)}
                                 >
                                   {`→ ${NEXT_STATUS[order.status] ?? 'next'}`}
@@ -568,10 +585,11 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="hover:bg-destructive/10 hover:text-destructive h-8 w-8 rounded-lg"
+                                  className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                                  loading={cancellingId === order.id}
                                   onClick={() => cancelOrder(order)}
                                 >
-                                  <XCircle size={16} />
+                                  {cancellingId !== order.id && <XCircle size={16} />}
                                 </Button>
                               )}
                             </div>
@@ -613,11 +631,11 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
             <div className="space-y-6 pt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-xl bg-muted/30 p-3 ring-1 ring-border/40">
-                  <p className="text-muted-foreground mb-1 text-xs">Customer</p>
+                  <p className="mb-1 text-xs text-muted-foreground">Customer</p>
                   <p className="text-sm">{selectedOrder.customerName || 'Walk-in'}</p>
                 </div>
                 <div className="rounded-xl bg-muted/30 p-3 ring-1 ring-border/40">
-                  <p className="text-muted-foreground mb-1 text-xs">Location</p>
+                  <p className="mb-1 text-xs text-muted-foreground">Location</p>
                   <p className="text-sm">
                     {selectedOrder.tableNumber ? `Table ${selectedOrder.tableNumber}` : 'Takeaway'}
                   </p>
@@ -625,7 +643,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
               </div>
 
               <div className="space-y-3">
-                <p className="text-muted-foreground px-1 text-xs">Items</p>
+                <p className="px-1 text-xs text-muted-foreground">Items</p>
                 <div className="space-y-2">
                   {selectedOrder.orderItems.map((item) => (
                     <div
@@ -633,7 +651,7 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                       className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/15 p-3"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="bg-primary/15 text-primary flex h-6 w-6 items-center justify-center rounded-md text-xs tabular-nums">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-xs tabular-nums text-primary">
                           {item.quantity}
                         </span>
                         <span className="text-sm">{item.nameSnapshot}</span>
@@ -649,13 +667,13 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
               <div className="space-y-4 border-t border-border pt-4">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-muted-foreground text-xs">Total</p>
+                    <p className="text-xs text-muted-foreground">Total</p>
                     <p className="text-xl tabular-nums text-foreground sm:text-2xl">
                       {formatGHS(toAmount(selectedOrder.total))}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-muted-foreground text-xs">Payment</p>
+                    <p className="text-xs text-muted-foreground">Payment</p>
                     <Badge
                       variant={selectedOrder.paymentStatus === 'paid' ? 'success' : 'warning'}
                       className="mt-1 font-normal capitalize"
@@ -678,13 +696,15 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                     selectedOrder.paymentStatus !== 'paid' && (
                       <Button
                         variant="outline"
-                        className="border-primary/25 bg-primary/5 text-primary h-11 flex-1 rounded-lg"
+                        className="h-11 flex-1 rounded-lg border-primary/25 bg-primary/5 text-primary"
+                        loading={modalActionLoading}
                         onClick={() => {
-                          verifyOnlinePayment(selectedOrder);
-                          setSelectedOrder(null);
+                          verifyOnlinePayment(selectedOrder).then(() => setSelectedOrder(null));
                         }}
                       >
-                        <ExternalLink size={17} strokeWidth={1.75} className="mr-2" />
+                        {!modalActionLoading && (
+                          <ExternalLink size={17} strokeWidth={1.75} className="mr-2" />
+                        )}
                         Verify online
                       </Button>
                     )}
@@ -695,20 +715,22 @@ export function OrdersView({ title = 'Active Orders' }: { title?: string }) {
                     <Button
                       variant={selectedOrder.paymentStatus === 'paid' ? 'outline' : 'primary'}
                       className="h-11 flex-1 rounded-lg"
+                      loading={modalActionLoading}
                       onClick={() => {
-                        toggleCashPayment(selectedOrder);
-                        setSelectedOrder(null);
+                        toggleCashPayment(selectedOrder).then(() => setSelectedOrder(null));
                       }}
                     >
-                      <Wallet size={17} strokeWidth={1.75} className="mr-2" />
+                      {!modalActionLoading && (
+                        <Wallet size={17} strokeWidth={1.75} className="mr-2" />
+                      )}
                       {selectedOrder.paymentStatus === 'paid' ? 'Mark unpaid' : 'Mark paid'}
                     </Button>
                     {selectedOrder.status !== 'done' && selectedOrder.status !== 'cancelled' && (
                       <Button
                         className="h-11 flex-1 rounded-lg"
+                        loading={advancingId === selectedOrder.id}
                         onClick={() => {
-                          advanceStatus(selectedOrder);
-                          setSelectedOrder(null);
+                          advanceStatus(selectedOrder).then(() => setSelectedOrder(null));
                         }}
                       >
                         {`Next: ${NEXT_STATUS[selectedOrder.status] ?? 'step'}`}

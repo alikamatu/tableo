@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import { createCategorySchema } from '@/lib/validations';
 import { Button } from '@/components/ui/Button';
@@ -141,7 +142,7 @@ export default function EditCategoryPage() {
 
   if (!restaurant) {
     return (
-      <div className="text-muted-foreground py-20 text-center font-medium">
+      <div className="py-20 text-center font-medium text-muted-foreground">
         Select a restaurant first.
       </div>
     );
@@ -149,8 +150,8 @@ export default function EditCategoryPage() {
 
   if (loading || !category) {
     return (
-      <div className="text-muted-foreground py-20 text-center text-sm font-medium">
-        Loading category…
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
       </div>
     );
   }
@@ -171,7 +172,7 @@ export default function EditCategoryPage() {
     >
       <div className="space-y-8">
         <div className="space-y-2">
-          <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Cover image
           </label>
           <ImageUpload
@@ -195,7 +196,7 @@ export default function EditCategoryPage() {
         />
 
         <div className="space-y-2">
-          <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Parent
           </label>
           <Select
@@ -226,7 +227,7 @@ export default function EditCategoryPage() {
         <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
           <div>
             <p className="text-sm font-semibold text-foreground">Active</p>
-            <p className="text-muted-foreground text-xs">Hide from the public menu when off.</p>
+            <p className="text-xs text-muted-foreground">Hide from the public menu when off.</p>
           </div>
           <Switch
             checked={form.isActive}
@@ -241,14 +242,14 @@ export default function EditCategoryPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {subs.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No subcategories yet.</p>
+                <p className="text-sm text-muted-foreground">No subcategories yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {subs.map((s) => (
                     <li key={s.id}>
                       <Link
                         href={`/dashboard/menu/categories/${s.id}`}
-                        className="text-primary text-sm font-semibold underline-offset-4 hover:underline"
+                        className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
                       >
                         {s.name}
                       </Link>
@@ -267,10 +268,10 @@ export default function EditCategoryPage() {
 
         <Card className="border-destructive/40">
           <CardHeader className="pb-2">
-            <CardTitle className="text-destructive text-base">Danger zone</CardTitle>
+            <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Deleting removes this category and related data per your backend rules. Items in this
               category may be deleted or blocked—confirm before proceeding.
             </p>
@@ -286,10 +287,11 @@ export default function EditCategoryPage() {
             <Button
               variant="outline"
               className="border-destructive text-destructive"
-              disabled={!deleteAck || deleting}
+              disabled={!deleteAck}
+              loading={deleting}
               onClick={handleDelete}
             >
-              {deleting ? 'Deleting…' : 'Delete category'}
+              Delete category
             </Button>
           </CardContent>
         </Card>

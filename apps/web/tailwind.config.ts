@@ -2,30 +2,56 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
-  darkMode: 'class',                 // next-themes sets .dark on <html>
+  darkMode: 'class', // next-themes sets .dark on <html>
   theme: {
     extend: {
       colors: {
         /* Map every Tailwind color name to a CSS variable */
-        bg:      'hsl(var(--bg))',
+        bg: 'hsl(var(--bg))',
         surface: 'hsl(var(--surface))',
-        subtle:  'hsl(var(--subtle))',
-        fg:      'hsl(var(--fg))',
-        muted:   'hsl(var(--fg-muted))',
-        border:  'hsl(var(--border))',
+        subtle: 'hsl(var(--subtle))',
+        fg: 'hsl(var(--fg))',
+        border: 'hsl(var(--border))',
 
         brand: {
           DEFAULT: 'hsl(var(--brand))',
-          fg:      'hsl(var(--brand-fg))',
+          fg: 'hsl(var(--brand-fg))',
         },
 
         success: 'hsl(var(--success))',
         warning: 'hsl(var(--warning))',
-        danger:  'hsl(var(--danger))',
+        danger: 'hsl(var(--danger))',
 
-        /* Keep these so existing code that references background/foreground still works */
+        /* Aliases — background/foreground/primary/muted map to the same tokens */
         background: 'hsl(var(--bg))',
         foreground: 'hsl(var(--fg))',
+
+        primary: {
+          DEFAULT: 'hsl(var(--brand))',
+          foreground: 'hsl(var(--brand-fg))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--subtle))',
+          foreground: 'hsl(var(--fg))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--subtle))',
+          foreground: 'hsl(var(--fg-muted))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--surface))',
+          foreground: 'hsl(var(--fg))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--danger))',
+          foreground: 'hsl(var(--brand-fg))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--subtle))',
+          foreground: 'hsl(var(--fg))',
+        },
+        input: 'hsl(var(--border))',
+        ring: 'hsl(var(--ring))',
       },
 
       fontFamily: {
@@ -33,11 +59,11 @@ const config: Config = {
       },
 
       borderRadius: {
-        sm:  'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 2px)',
         DEFAULT: 'var(--radius)',
-        md:  'var(--radius)',
-        lg:  'calc(var(--radius) + 4px)',
-        xl:  'calc(var(--radius) + 8px)',
+        md: 'var(--radius)',
+        lg: 'calc(var(--radius) + 4px)',
+        xl: 'calc(var(--radius) + 8px)',
         '2xl': '1rem',
         full: '9999px',
       },
@@ -62,7 +88,6 @@ const config: Config = {
         float: 'float 3s ease-in-out infinite',
       },
     },
-
   },
   plugins: [],
 };

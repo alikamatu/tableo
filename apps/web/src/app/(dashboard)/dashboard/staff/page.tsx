@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Users, UserMinus, Mail, ShieldCheck, UserCog, UtensilsCrossed } from 'lucide-react';
+import {
+  Loader2,
+  Plus,
+  Users,
+  UserMinus,
+  Mail,
+  ShieldCheck,
+  UserCog,
+  UtensilsCrossed,
+} from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import api from '@/lib/api';
 import { inviteStaffSchema } from '@/lib/validations';
@@ -54,6 +63,8 @@ export default function StaffPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [form, setForm] = useState({ email: '', role: '' });
   const [inviting, setInviting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const containerRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -96,6 +107,7 @@ export default function StaffPage() {
 
   const toggleActive = async (member: StaffMember) => {
     if (!branch) return;
+    setTogglingId(member.id);
     try {
       await api.patch(`/branches/${branch.id}/staff/${member.id}`, {
         isActive: !member.isActive,
@@ -105,23 +117,28 @@ export default function StaffPage() {
       );
     } catch {
       toast.error('Sync failed');
+    } finally {
+      setTogglingId(null);
     }
   };
 
   const removeMember = async (member: StaffMember) => {
     if (!branch) return;
+    setRemovingId(member.id);
     try {
       await api.delete(`/branches/${branch.id}/staff/${member.id}`);
       toast.success('Member removed');
       load();
     } catch {
       toast.error('Action failed');
+    } finally {
+      setRemovingId(null);
     }
   };
 
   if (!branch)
     return (
-      <div className="text-muted-foreground py-20 text-center font-medium">
+      <div className="py-20 text-center font-medium text-muted-foreground">
         Select a branch to manage team.
       </div>
     );
@@ -131,7 +148,7 @@ export default function StaffPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Team Settings</h1>
-          <p className="text-muted-foreground mt-1 font-medium">
+          <p className="mt-1 font-medium text-muted-foreground">
             Control access and roles for{' '}
             <span className="font-bold text-foreground">{branch.name}</span>
           </p>
@@ -176,10 +193,14 @@ export default function StaffPage() {
         </Modal>
       </div>
 
-      {staff.length === 0 && !loading ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
+        </div>
+      ) : staff.length === 0 ? (
         <Card className="staff-card border-dashed p-20 text-center">
           <CardContent className="flex flex-col items-center gap-6">
-            <div className="bg-primary/10 text-primary flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
               <Users size={32} />
             </div>
             <p className="text-xl font-bold text-foreground">You are currently solo</p>
@@ -200,19 +221,19 @@ export default function StaffPage() {
                 <Card className="staff-card group overflow-hidden border-border transition-all hover:shadow-md active:scale-[0.99]">
                   <CardContent className="space-y-6 pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="text-primary flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-muted text-xl font-black shadow-sm">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-muted text-xl font-black text-primary shadow-sm">
                         {member.user.fullName.charAt(0)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-bold text-foreground">{member.user.fullName}</p>
-                        <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs font-medium">
+                        <div className="mt-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                           <Mail size={12} className="text-primary/60" />
                           <span className="truncate">{member.user.email}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="group-hover:bg-accent flex items-center justify-between rounded-xl border border-border bg-muted p-3.5 transition-colors">
+                    <div className="flex items-center justify-between rounded-xl border border-border bg-muted p-3.5 transition-colors group-hover:bg-accent">
                       <div className="flex items-center gap-2">
                         <Icon
                           size={14}
@@ -220,7 +241,7 @@ export default function StaffPage() {
                             member.isActive ? 'text-primary' : 'text-muted-foreground/50',
                           )}
                         />
-                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                           {member.role}
                         </span>
                       </div>
@@ -236,22 +257,25 @@ export default function StaffPage() {
                         <Switch
                           checked={member.isActive}
                           onCheckedChange={() => toggleActive(member)}
+                          disabled={togglingId === member.id}
                           className="scale-90"
                         />
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <p className="text-muted-foreground/40 text-[10px] font-bold italic">
+                      <p className="text-[10px] font-bold italic text-muted-foreground/40">
                         Joined {new Date(member.invitedAt).toLocaleDateString()}
                       </p>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-destructive/60 hover:bg-destructive/10 hover:text-destructive h-8 gap-2 px-3 text-[10px] font-bold uppercase tracking-tight"
+                        className="h-8 gap-2 px-3 text-[10px] font-bold uppercase tracking-tight text-destructive/60 hover:bg-destructive/10 hover:text-destructive"
+                        loading={removingId === member.id}
+                        startContent={removingId !== member.id && <UserMinus size={14} />}
                         onClick={() => removeMember(member)}
                       >
-                        <UserMinus size={14} /> Remove
+                        Remove
                       </Button>
                     </div>
                   </CardContent>

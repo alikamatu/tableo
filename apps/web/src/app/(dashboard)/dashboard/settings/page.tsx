@@ -53,7 +53,12 @@ export default function SettingsPage() {
   const { current: restaurant } = useAppSelector((s) => s.restaurant);
   const { user } = useAppSelector((s) => s.auth);
   const dispatch = useAppDispatch();
-  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [orgLoading, setOrgLoading] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
+  const [trialLoading, setTrialLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('profile');
 
   // Profile Form
@@ -117,13 +122,12 @@ export default function SettingsPage() {
     const params = new URLSearchParams(window.location.search);
     const reference = params.get('reference');
     if (reference) {
-      setLoading(true);
+      setBillingLoading(true);
       api
         .post(`/subscriptions/verify/${reference}`)
         .then(() => {
           toast.success('Payment verified successfully!');
           dispatch(initAuth());
-          // Clean up URL
           window.history.replaceState(
             {},
             document.title,
@@ -134,13 +138,13 @@ export default function SettingsPage() {
           toast.error('Payment verification is pending or failed.');
         })
         .finally(() => {
-          setLoading(false);
+          setBillingLoading(false);
         });
     }
   }, [dispatch]);
 
   const handleUpdateProfile = async () => {
-    setLoading(true);
+    setProfileLoading(true);
     try {
       await api.patch('/auth/profile', { fullName: profileName, phone: profilePhone });
       await dispatch(initAuth());
@@ -148,12 +152,12 @@ export default function SettingsPage() {
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
-      setLoading(false);
+      setProfileLoading(false);
     }
   };
 
   const handleChangePassword = async () => {
-    setLoading(true);
+    setSecurityLoading(true);
     try {
       await api.post('/auth/change-password', passData);
       setPassData({ oldPassword: '', newPassword: '' });
@@ -161,52 +165,52 @@ export default function SettingsPage() {
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to change password');
     } finally {
-      setLoading(false);
+      setSecurityLoading(false);
     }
   };
 
   const handleUpdateOrg = async () => {
     if (!restaurant) return;
-    setLoading(true);
+    setOrgLoading(true);
     try {
       await dispatch(updateRestaurant({ id: restaurant.id, ...orgData })).unwrap();
       toast.success('Organization updated');
     } catch {
       toast.error('Failed to update organization');
     } finally {
-      setLoading(false);
+      setOrgLoading(false);
     }
   };
 
   const handleUpdateBilling = async () => {
     if (!restaurant) return;
-    setLoading(true);
+    setBillingLoading(true);
     try {
       await dispatch(updateRestaurant({ id: restaurant.id, ...billingData })).unwrap();
       toast.success('Billing details updated');
     } catch {
       toast.error('Failed to update billing details');
     } finally {
-      setLoading(false);
+      setBillingLoading(false);
     }
   };
 
   const handleUpgrade = async (plan: string) => {
     if (!restaurant) return;
-    setLoading(true);
+    setUpgradeLoading(plan);
     try {
       const { data } = await api.post('/subscriptions/init', { restaurantId: restaurant.id, plan });
       window.location.href = data.data.authorizationUrl;
     } catch (err: any) {
       toast.error(err.response?.data?.message ?? 'Action failed');
     } finally {
-      setLoading(false);
+      setUpgradeLoading(null);
     }
   };
 
   const handleStartTrial = async (plan: string) => {
     if (!restaurant) return;
-    setLoading(true);
+    setTrialLoading(plan);
     try {
       const { data } = await api.post(`/restaurants/${restaurant.id}/subscription/trial`, { plan });
       toast.success(data.message);
@@ -214,13 +218,13 @@ export default function SettingsPage() {
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Trial activation failed');
     } finally {
-      setLoading(false);
+      setTrialLoading(null);
     }
   };
 
   if (!restaurant)
     return (
-      <div className="text-muted-foreground py-20 text-center font-medium">
+      <div className="py-20 text-center font-medium text-muted-foreground">
         Select a restaurant first.
       </div>
     );
@@ -229,7 +233,7 @@ export default function SettingsPage() {
     <div ref={containerRef} className="max-w-5xl space-y-8 pb-20">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Account Settings</h1>
-        <p className="text-muted-foreground mt-1 font-medium">
+        <p className="mt-1 font-medium text-muted-foreground">
           Manage your profile, organization, billing, and security.
         </p>
       </div>
@@ -274,7 +278,7 @@ export default function SettingsPage() {
                 readOnly
                 className="bg-muted/30 opacity-60"
               />
-              <Button onClick={handleUpdateProfile} loading={loading} className="mt-4">
+              <Button onClick={handleUpdateProfile} loading={profileLoading} className="mt-4">
                 Save Profile
               </Button>
             </CardContent>
@@ -327,7 +331,7 @@ export default function SettingsPage() {
                   onValueChange={(v) => setOrgData({ ...orgData, city: v })}
                 />
               </div>
-              <Button onClick={handleUpdateOrg} loading={loading}>
+              <Button onClick={handleUpdateOrg} loading={orgLoading}>
                 Save Organization
               </Button>
             </CardContent>
@@ -361,12 +365,12 @@ export default function SettingsPage() {
                         className={cn(
                           'relative flex flex-col rounded-2xl border p-5 transition-all',
                           isCurrent
-                            ? 'bg-primary/5 border-primary shadow-primary/5 shadow-inner'
+                            ? 'border-primary bg-primary/5 shadow-inner shadow-primary/5'
                             : 'border-border bg-muted/20',
                         )}
                       >
                         {isCurrent && (
-                          <div className="bg-primary text-primary-foreground absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 text-[9px] font-black shadow-sm">
+                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-black text-primary-foreground shadow-sm">
                             CURRENT
                           </div>
                         )}
@@ -375,7 +379,7 @@ export default function SettingsPage() {
                             className={cn(
                               'rounded-lg border p-1.5',
                               isCurrent
-                                ? 'text-primary border-primary/20 bg-background'
+                                ? 'border-primary/20 bg-background text-primary'
                                 : 'border-border bg-background',
                             )}
                           >
@@ -390,14 +394,14 @@ export default function SettingsPage() {
                             {plan}
                           </p>
                         </div>
-                        <p className="text-muted-foreground mb-4 h-8 text-[10px] font-medium">
+                        <p className="mb-4 h-8 text-[10px] font-medium text-muted-foreground">
                           {cfg.desc}
                         </p>
                         <ul className="mb-6 flex-1 space-y-2">
                           {cfg.features.map((f) => (
                             <li
                               key={f}
-                              className="text-muted-foreground flex items-center gap-2 text-[10px] font-bold"
+                              className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground"
                             >
                               <Check size={10} className="text-primary" />
                               <span>{f}</span>
@@ -410,18 +414,22 @@ export default function SettingsPage() {
                               variant="outline"
                               className="h-8 w-full text-[10px] font-black"
                               onClick={() => handleUpgrade(plan)}
-                              loading={loading}
+                              loading={upgradeLoading === plan}
+                              disabled={!!upgradeLoading || !!trialLoading}
                             >
                               Subscribe to {plan}
                             </Button>
                             {!restaurant.subExpiresAt && (
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto w-full py-0.5 text-[9px] font-bold text-primary hover:underline"
                                 onClick={() => handleStartTrial(plan)}
-                                disabled={loading}
-                                className="text-primary w-full text-center text-[9px] font-bold hover:underline"
+                                loading={trialLoading === plan}
+                                disabled={!!upgradeLoading || !!trialLoading}
                               >
                                 Start 1-month Free Trial
-                              </button>
+                              </Button>
                             )}
                           </div>
                         )}
@@ -470,7 +478,7 @@ export default function SettingsPage() {
                     }
                   />
                 </div>
-                <Button onClick={handleUpdateBilling} loading={loading}>
+                <Button onClick={handleUpdateBilling} loading={billingLoading}>
                   Save Payment Settings
                 </Button>
               </CardContent>
@@ -498,7 +506,7 @@ export default function SettingsPage() {
                 value={passData.newPassword}
                 onValueChange={(v) => setPassData({ ...passData, newPassword: v })}
               />
-              <Button onClick={handleChangePassword} loading={loading} className="mt-4">
+              <Button onClick={handleChangePassword} loading={securityLoading} className="mt-4">
                 Update Password
               </Button>
             </CardContent>

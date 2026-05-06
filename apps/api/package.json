@@ -7,7 +7,7 @@
     "start": "node dist/apps/api/src/main.js",
     "start:prod": "npm run start",
     "start:dev": "npm run dev",
-    "build": "prisma generate && nest build",
+    "build": "prisma generate && npx nest build",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",

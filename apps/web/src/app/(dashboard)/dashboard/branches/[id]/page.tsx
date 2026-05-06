@@ -25,6 +25,7 @@ export default function EditBranchPage() {
 
   const [form, setForm] = useState({ name: '', address: '', phone: '', isActive: true });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const containerRef = React.useRef(null);
@@ -78,19 +79,22 @@ export default function EditBranchPage() {
 
   const handleDelete = async () => {
     if (!restaurant || !branch) return;
+    setDeleting(true);
     try {
       await dispatch(deleteBranch({ restaurantId: restaurant.id, branchId: branch.id })).unwrap();
       toast.success('Branch deleted');
       router.push('/dashboard/dashboard/branches');
     } catch (err: any) {
       toast.error(err ?? 'Failed to delete branch');
+    } finally {
+      setDeleting(false);
     }
   };
 
   if (loading && !branch) {
     return (
       <div className="flex items-center justify-center py-32">
-        <Loader2 className="text-primary animate-spin" size={40} />
+        <Loader2 className="animate-spin text-primary" size={40} />
       </div>
     );
   }
@@ -98,7 +102,7 @@ export default function EditBranchPage() {
   if (!branch && !loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-32 text-center">
-        <p className="text-muted-foreground font-medium">Branch not found.</p>
+        <p className="font-medium text-muted-foreground">Branch not found.</p>
         <Button onClick={() => router.push('/dashboard/dashboard/branches')}>Go Back</Button>
       </div>
     );
@@ -124,7 +128,7 @@ export default function EditBranchPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Edit Branch</h1>
-            <p className="text-muted-foreground text-sm font-medium">
+            <p className="text-sm font-medium text-muted-foreground">
               Update branch details or status
             </p>
           </div>
@@ -140,15 +144,15 @@ export default function EditBranchPage() {
       </div>
 
       <Card className="overflow-hidden border-none bg-surface shadow-xl">
-        <CardHeader className="bg-primary/5 border-primary/10 border-b p-6">
+        <CardHeader className="border-b border-primary/10 bg-primary/5 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Store size={20} />
               </div>
               <div>
                 <CardTitle className="text-lg">{branch?.name}</CardTitle>
-                <p className="text-muted-foreground text-xs font-medium">Manage this location</p>
+                <p className="text-xs font-medium text-muted-foreground">Manage this location</p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-full border border-border bg-surface px-3 py-1.5">
@@ -206,7 +210,7 @@ export default function EditBranchPage() {
               <Button
                 type="submit"
                 loading={saving}
-                className="shadow-primary/20 h-12 flex-1 rounded-xl font-bold shadow-lg"
+                className="h-12 flex-1 rounded-xl font-bold shadow-lg shadow-primary/20"
                 startContent={!saving && <Save size={18} />}
               >
                 Save Changes
@@ -223,19 +227,25 @@ export default function EditBranchPage() {
             <ModalTitle>Delete Branch?</ModalTitle>
           </ModalHeader>
           <div className="py-4">
-            <p className="text-muted-foreground text-sm font-medium">
+            <p className="text-sm font-medium text-muted-foreground">
               Are you sure you want to delete{' '}
               <span className="font-bold text-foreground">{branch?.name}</span>? This action cannot
               be undone.
             </p>
           </div>
           <ModalFooter className="flex gap-3">
-            <Button variant="muted" className="flex-1" onClick={() => setShowDeleteConfirm(false)}>
+            <Button
+              variant="muted"
+              className="flex-1"
+              disabled={deleting}
+              onClick={() => setShowDeleteConfirm(false)}
+            >
               Cancel
             </Button>
             <Button
               variant="primary"
               className="flex-1 bg-danger hover:bg-danger/90"
+              loading={deleting}
               onClick={handleDelete}
             >
               Delete Permanently

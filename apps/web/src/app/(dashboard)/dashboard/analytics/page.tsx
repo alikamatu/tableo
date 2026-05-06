@@ -89,17 +89,25 @@ export default function AnalyticsPage() {
   if ((restLoading || branchLoading) && !branch) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="text-primary animate-spin" size={28} strokeWidth={1.75} />
+        <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
       </div>
     );
   }
 
   if (!branch)
     return (
-      <div className="text-muted-foreground py-16 text-center text-sm">
+      <div className="py-16 text-center text-sm text-muted-foreground">
         Select a branch to view statistics.
       </div>
     );
+
+  if (loading && !live) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
+      </div>
+    );
+  }
 
   const hourlyData = Array.from({ length: 24 }, (_, i) => ({
     hour: `${i.toString().padStart(2, '0')}:00`,
@@ -115,11 +123,11 @@ export default function AnalyticsPage() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-card/95 rounded-lg border border-border p-3 shadow-lg backdrop-blur-sm">
-          <p className="text-muted-foreground mb-1 text-xs">{label}</p>
+        <div className="rounded-lg border border-border bg-card/95 p-3 shadow-lg backdrop-blur-sm">
+          <p className="mb-1 text-xs text-muted-foreground">{label}</p>
           <p className="text-sm tabular-nums text-foreground">{formatGHS(payload[0].value)}</p>
           {payload[1] && (
-            <p className="text-primary mt-1 text-xs tabular-nums">{payload[1].value} orders</p>
+            <p className="mt-1 text-xs tabular-nums text-primary">{payload[1].value} orders</p>
           )}
         </div>
       );
@@ -164,14 +172,14 @@ export default function AnalyticsPage() {
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="bg-primary/10 text-primary mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <BarChart3 size={18} strokeWidth={1.75} />
           </div>
           <div>
             <h1 className="text-lg font-medium tracking-tight text-foreground sm:text-xl">
               Insights
             </h1>
-            <p className="text-muted-foreground mt-0.5 text-sm">
+            <p className="mt-0.5 text-sm text-muted-foreground">
               Live branch performance and history.
             </p>
           </div>
@@ -184,7 +192,7 @@ export default function AnalyticsPage() {
             value={dateRange.from}
             onValueChange={(v) => setDateRange((d) => ({ ...d, from: v }))}
           />
-          <span className="text-muted-foreground/50 text-xs">→</span>
+          <span className="text-xs text-muted-foreground/50">→</span>
           <Input
             type="date"
             className="h-8 border-none bg-transparent text-xs focus-visible:ring-0"
@@ -204,7 +212,7 @@ export default function AnalyticsPage() {
           const Icon = stat.icon;
           return (
             <motion.div key={i} variants={listItem}>
-              <Card className="bg-card/50 border-border/80 transition-shadow hover:shadow-md">
+              <Card className="border-border/80 bg-card/50 transition-shadow hover:shadow-md">
                 <CardContent className="px-4 pb-4 pt-4 sm:px-5 sm:pt-5">
                   <div className="mb-3 flex items-center justify-between">
                     <div
@@ -219,7 +227,7 @@ export default function AnalyticsPage() {
                       live
                     </Badge>
                   </div>
-                  <p className="text-muted-foreground text-xs">{stat.label}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
                   <p className="mt-1 text-lg tabular-nums text-foreground sm:text-xl">{stat.val}</p>
                 </CardContent>
               </Card>
@@ -236,7 +244,7 @@ export default function AnalyticsPage() {
         >
           <Card className="h-[300px] border-border/80 sm:h-[340px] lg:h-[380px]">
             <CardHeader className="pb-1 pt-4">
-              <CardTitle className="text-muted-foreground text-xs font-medium">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 Revenue over time
               </CardTitle>
             </CardHeader>
@@ -289,7 +297,7 @@ export default function AnalyticsPage() {
         >
           <Card className="h-[300px] border-border/80 sm:h-[340px] lg:h-[380px]">
             <CardHeader className="pb-1 pt-4">
-              <CardTitle className="text-muted-foreground text-xs font-medium">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 Orders by hour
               </CardTitle>
             </CardHeader>
@@ -332,7 +340,7 @@ export default function AnalyticsPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="border-border/80 lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-muted-foreground text-xs font-medium">Top items</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Top items</CardTitle>
           </CardHeader>
           <CardContent>
             <motion.div className="space-y-2" variants={listParent} initial="hidden" animate="show">
@@ -344,19 +352,19 @@ export default function AnalyticsPage() {
                     className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-3 transition-colors hover:bg-muted/40 sm:px-4"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="text-muted-foreground w-5 shrink-0 text-center text-xs tabular-nums">
+                      <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
                         {idx + 1}
                       </span>
                       <span className="truncate text-sm text-foreground">{item.name}</span>
                     </div>
                     <div className="flex shrink-0 items-center gap-6 text-right">
                       <div>
-                        <p className="text-muted-foreground text-[10px]">Qty</p>
+                        <p className="text-[10px] text-muted-foreground">Qty</p>
                         <p className="text-sm tabular-nums text-foreground">{item.qty}</p>
                       </div>
                       <div className="w-20">
-                        <p className="text-muted-foreground text-[10px]">Revenue</p>
-                        <p className="text-primary text-sm tabular-nums">
+                        <p className="text-[10px] text-muted-foreground">Revenue</p>
+                        <p className="text-sm tabular-nums text-primary">
                           {formatGHS(item.revenue)}
                         </p>
                       </div>
@@ -364,7 +372,7 @@ export default function AnalyticsPage() {
                   </motion.div>
                 ))
               ) : (
-                <p className="text-muted-foreground py-6 text-center text-sm">
+                <p className="py-6 text-center text-sm text-muted-foreground">
                   {loading ? 'Loading…' : 'No item data yet.'}
                 </p>
               )}
@@ -374,7 +382,7 @@ export default function AnalyticsPage() {
 
         <Card className="border-border/80">
           <CardHeader className="pb-2">
-            <CardTitle className="text-muted-foreground text-xs font-medium">
+            <CardTitle className="text-xs font-medium text-muted-foreground">
               Order status
             </CardTitle>
           </CardHeader>
@@ -386,7 +394,7 @@ export default function AnalyticsPage() {
               { label: 'Done', count: live?.statusCounts?.done, bar: 'bg-muted-foreground/40' },
             ].map((st) => (
               <div key={st.label} className="space-y-1.5">
-                <div className="text-muted-foreground flex justify-between text-xs">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>{st.label}</span>
                   <span className="tabular-nums text-foreground">{st.count ?? 0}</span>
                 </div>

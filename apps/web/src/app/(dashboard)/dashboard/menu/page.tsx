@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FolderTree,
   Image as ImageIcon,
+  Loader2,
   Plus,
   Search,
   UtensilsCrossed,
@@ -128,7 +129,7 @@ export default function MenuHubPage() {
 
   if (!restaurant) {
     return (
-      <div className="text-muted-foreground py-20 text-center font-medium">
+      <div className="py-20 text-center font-medium text-muted-foreground">
         Select a restaurant first.
       </div>
     );
@@ -142,21 +143,21 @@ export default function MenuHubPage() {
       transition={{ duration: 0.3 }}
     >
       <div className="mb-6 flex items-start gap-3">
-        <div className="bg-primary/10 text-primary mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <LayoutList size={18} strokeWidth={1.75} />
         </div>
         <div className="space-y-1">
           <h1 className="text-lg font-medium tracking-tight text-foreground sm:text-xl">Menu</h1>
-          <p className="text-muted-foreground text-sm leading-relaxed">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             Categories, subcategories, and dishes — each opens on its own page to edit.
           </p>
         </div>
       </div>
 
       {error ? (
-        <Card className="border-destructive/40 mb-6">
+        <Card className="mb-6 border-destructive/40">
           <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-destructive text-sm font-medium">{error}</p>
+            <p className="text-sm font-medium text-destructive">{error}</p>
             <Button variant="outline" size="sm" onClick={() => void refetch()}>
               Retry
             </Button>
@@ -164,7 +165,7 @@ export default function MenuHubPage() {
         </Card>
       ) : null}
 
-      <Card className="bg-card/50 mb-6 border-border/80">
+      <Card className="mb-6 border-border/80 bg-card/50">
         <CardContent className="space-y-4 py-4">
           <p className="text-sm font-medium text-foreground">Get started</p>
           <ul className="space-y-2 text-sm">
@@ -217,7 +218,9 @@ export default function MenuHubPage() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground py-16 text-center text-sm font-medium">Loading menu…</p>
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
+        </div>
       ) : topLevelCategories.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -226,12 +229,12 @@ export default function MenuHubPage() {
         >
           <Card className="border-dashed border-border/80 bg-muted/20">
             <CardContent className="flex flex-col items-center gap-5 py-14 text-center sm:py-16">
-              <div className="bg-primary/10 text-primary flex h-14 w-14 items-center justify-center rounded-xl">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <UtensilsCrossed size={26} strokeWidth={1.75} />
               </div>
               <div className="space-y-1.5">
                 <p className="text-base font-medium text-foreground">No categories yet</p>
-                <p className="text-muted-foreground mx-auto max-w-sm text-sm leading-relaxed">
+                <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
                   Add a section (e.g. Mains, Drinks), then optional subcategories and items.
                 </p>
               </div>
@@ -242,7 +245,7 @@ export default function MenuHubPage() {
           </Card>
         </motion.div>
       ) : visibleTopLevel.length === 0 ? (
-        <p className="text-muted-foreground py-12 text-center text-sm">
+        <p className="py-12 text-center text-sm text-muted-foreground">
           No matches for your search.
         </p>
       ) : (
@@ -261,7 +264,7 @@ export default function MenuHubPage() {
                     {cat.coverUrl ? (
                       <img src={cat.coverUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <ImageIcon className="text-muted-foreground h-5 w-5" />
+                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -279,7 +282,7 @@ export default function MenuHubPage() {
                       </Badge>
                     </div>
                     {cat.description ? (
-                      <p className="text-muted-foreground mt-1 line-clamp-2 text-xs font-medium">
+                      <p className="mt-1 line-clamp-2 text-xs font-medium text-muted-foreground">
                         {cat.description}
                       </p>
                     ) : null}
@@ -316,7 +319,7 @@ export default function MenuHubPage() {
                   >
                     <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-2">
-                        <FolderTree className="text-muted-foreground h-4 w-4 shrink-0" />
+                        <FolderTree className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <h3 className="text-sm font-medium text-foreground sm:text-base">
                           {sub.name}
                         </h3>
@@ -377,7 +380,7 @@ function ItemListBlock({
   if (list.length === 0) {
     return (
       <Card>
-        <CardContent className="text-muted-foreground py-8 text-center text-sm italic">
+        <CardContent className="py-8 text-center text-sm italic text-muted-foreground">
           No items{search.trim() ? ' match this filter' : ' yet'}.
         </CardContent>
       </Card>
@@ -399,17 +402,17 @@ function ItemListBlock({
                 {item.imageUrl ? (
                   <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <ImageIcon className="text-muted-foreground h-5 w-5" />
+                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
                 {item.description ? (
-                  <p className="text-muted-foreground line-clamp-1 text-xs font-medium">
+                  <p className="line-clamp-1 text-xs font-medium text-muted-foreground">
                     {item.description}
                   </p>
                 ) : null}
-                <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs font-semibold">
+                <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
                   Edit details
                   <ChevronRight className="h-3 w-3" />
                 </p>
@@ -419,7 +422,7 @@ function ItemListBlock({
               <p className="text-sm font-medium tabular-nums text-foreground">
                 {item.discountedPrice ? (
                   <span className="flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-                    <span className="text-muted-foreground text-xs line-through">
+                    <span className="text-xs text-muted-foreground line-through">
                       {formatGHS(toAmount(item.basePrice))}
                     </span>
                     <span>{formatGHS(toAmount(item.discountedPrice))}</span>
@@ -429,7 +432,7 @@ function ItemListBlock({
                 )}
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground hidden text-[10px] font-medium uppercase tracking-wide sm:inline">
+                <span className="hidden text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:inline">
                   {item.isAvailable ? 'On' : 'Off'}
                 </span>
                 <Switch

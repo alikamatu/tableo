@@ -52,6 +52,8 @@ export default function BranchesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [qrLoadingId, setQrLoadingId] = useState<string | null>(null);
   const [qrModal, setQrModal] = useState<{ slug: string; qrCode: string; menuUrl: string } | null>(
     null,
   );
@@ -83,12 +85,15 @@ export default function BranchesPage() {
 
   const handleDelete = async (id: string) => {
     if (!restaurant) return;
+    setDeleteLoading(true);
     try {
       await dispatch(deleteBranch({ restaurantId: restaurant.id, branchId: id })).unwrap();
       toast.success('Branch deleted');
       setDeletingId(null);
     } catch (err: any) {
       toast.error(err ?? 'Failed to delete branch');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -100,6 +105,7 @@ export default function BranchesPage() {
 
   const showQrCode = async (branchId: string) => {
     if (!restaurant) return;
+    setQrLoadingId(branchId);
     try {
       const { data } = await api.get(`/restaurants/${restaurant.id}/branches/${branchId}/qrcode`, {
         params: { baseUrl: window.location.origin },
@@ -107,13 +113,15 @@ export default function BranchesPage() {
       setQrModal(data.data);
     } catch {
       toast.error('Failed to generate QR code');
+    } finally {
+      setQrLoadingId(null);
     }
   };
 
   if (loading && !restaurant) {
     return (
       <div className="flex items-center justify-center py-32">
-        <Loader2 className="text-primary animate-spin" size={32} />
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     );
   }
@@ -126,7 +134,7 @@ export default function BranchesPage() {
         </div>
         <div className="space-y-1">
           <h3 className="text-xl font-bold">No restaurant selected</h3>
-          <p className="text-muted-foreground max-w-xs">
+          <p className="max-w-xs text-muted-foreground">
             Please select a restaurant to manage its locations.
           </p>
         </div>
@@ -139,7 +147,7 @@ export default function BranchesPage() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Locations</h1>
-          <p className="text-muted-foreground mt-1 font-medium">
+          <p className="mt-1 font-medium text-muted-foreground">
             Manage branches for <span className="font-bold text-foreground">{restaurant.name}</span>
           </p>
         </div>
@@ -147,7 +155,7 @@ export default function BranchesPage() {
         <Button
           startContent={<Plus size={18} />}
           onClick={() => router.push('/dashboard/branches/new')}
-          className="shadow-primary/20 shadow-md"
+          className="shadow-md shadow-primary/20"
         >
           New Branch
         </Button>
@@ -158,7 +166,7 @@ export default function BranchesPage() {
         <CardContent className="flex flex-col gap-4 p-4 md:flex-row">
           <div className="relative flex-1">
             <Search
-              className="text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
               size={18}
             />
             <input
@@ -166,7 +174,7 @@ export default function BranchesPage() {
               placeholder="Search by name or address..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="focus:ring-primary/20 h-11 w-full rounded-xl border border-border bg-surface pl-10 pr-4 text-sm font-medium outline-none transition-all focus:ring-2"
+              className="h-11 w-full rounded-xl border border-border bg-surface pl-10 pr-4 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div className="w-full md:w-48">
@@ -185,19 +193,19 @@ export default function BranchesPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="text-primary animate-spin" size={32} />
+          <Loader2 className="animate-spin text-primary" size={32} />
         </div>
       ) : filteredBranches.length === 0 ? (
         <Card className="branch-card border-dashed bg-muted/10 p-20 text-center">
           <CardContent className="flex flex-col items-center gap-6">
-            <div className="bg-primary/10 text-primary flex h-20 w-20 items-center justify-center rounded-3xl shadow-inner">
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
               <GitBranch size={40} />
             </div>
             <div className="space-y-2">
               <p className="text-2xl font-bold text-foreground">
                 {search || statusFilter !== 'all' ? 'No results found' : 'No branches yet'}
               </p>
-              <p className="text-muted-foreground mx-auto max-w-xs text-sm font-medium">
+              <p className="mx-auto max-w-xs text-sm font-medium text-muted-foreground">
                 {search || statusFilter !== 'all'
                   ? 'Try adjusting your filters or search terms.'
                   : 'Add your restaurant locations to start generating menus and receiving orders.'}
@@ -260,27 +268,27 @@ export default function BranchesPage() {
 
                 <CardContent className="flex flex-1 flex-col space-y-5">
                   <div className="space-y-2.5">
-                    <div className="text-muted-foreground flex items-start gap-2 text-sm font-medium">
-                      <MapPin size={16} className="text-primary/60 mt-0.5 shrink-0" />
+                    <div className="flex items-start gap-2 text-sm font-medium text-muted-foreground">
+                      <MapPin size={16} className="mt-0.5 shrink-0 text-primary/60" />
                       <span className="line-clamp-2 leading-snug">
                         {b.address || 'Location undisclosed'}
                       </span>
                     </div>
                     {b.phone && (
-                      <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                        <Phone size={16} className="text-primary/60 shrink-0" />
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Phone size={16} className="shrink-0 text-primary/60" />
                         <span>{b.phone}</span>
                       </div>
                     )}
                   </div>
 
                   <div className="mt-auto space-y-4 pt-2">
-                    <div className="group-hover:bg-accent/50 flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-2.5 transition-colors">
-                      <div className="text-muted-foreground flex-1 truncate text-xs font-bold tracking-tight opacity-70">
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-2.5 transition-colors group-hover:bg-accent/50">
+                      <div className="flex-1 truncate text-xs font-bold tracking-tight text-muted-foreground opacity-70">
                         /{b.slug}
                       </div>
                       <button
-                        className="hover:border-primary/40 hover:text-primary flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-[10px] font-bold transition-all"
+                        className="flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-[10px] font-bold transition-all hover:border-primary/40 hover:text-primary"
                         onClick={() => window.open(`/menu/${b.slug}`, '_blank')}
                       >
                         View Menu <ExternalLink size={12} className="ml-1.5" />
@@ -288,7 +296,7 @@ export default function BranchesPage() {
                     </div>
 
                     <Button
-                      className="shadow-primary/10 h-10 w-full gap-2 text-xs font-bold shadow-lg"
+                      className="h-10 w-full gap-2 text-xs font-bold shadow-lg shadow-primary/10"
                       onClick={() => handleManageBranch(b)}
                     >
                       <ShoppingCart size={16} /> Manage Orders
@@ -297,14 +305,16 @@ export default function BranchesPage() {
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        className="hover:bg-primary/5 hover:border-primary/20 h-10 flex-1 gap-2 border-border text-xs font-bold"
+                        className="h-10 flex-1 gap-2 border-border text-xs font-bold hover:border-primary/20 hover:bg-primary/5"
+                        loading={qrLoadingId === b.id}
+                        startContent={qrLoadingId !== b.id && <QrCode size={16} />}
                         onClick={() => showQrCode(b.id)}
                       >
-                        <QrCode size={16} /> QR Code
+                        QR Code
                       </Button>
                       <Button
                         variant="outline"
-                        className="hover:bg-primary/5 hover:border-primary/20 h-10 flex-1 gap-2 border-border text-xs font-bold"
+                        className="h-10 flex-1 gap-2 border-border text-xs font-bold hover:border-primary/20 hover:bg-primary/5"
                         onClick={() => router.push(`/dashboard/branches/${b.id}`)}
                       >
                         <Edit2 size={16} /> Edit
@@ -332,7 +342,7 @@ export default function BranchesPage() {
                 </div>
                 <div className="space-y-2 text-center">
                   <p className="text-sm font-bold text-foreground">{qrModal.menuUrl}</p>
-                  <p className="text-muted-foreground px-10 text-xs font-medium leading-relaxed">
+                  <p className="px-10 text-xs font-medium leading-relaxed text-muted-foreground">
                     Print this QR and place it on your dining tables for easy menu access.
                   </p>
                 </div>
@@ -354,18 +364,24 @@ export default function BranchesPage() {
             <ModalTitle>Delete Branch?</ModalTitle>
           </ModalHeader>
           <div className="py-4">
-            <p className="text-muted-foreground text-sm font-medium">
+            <p className="text-sm font-medium text-muted-foreground">
               This action cannot be undone. All data associated with this branch will be permanently
               removed.
             </p>
           </div>
           <ModalFooter className="flex gap-3">
-            <Button variant="muted" className="flex-1" onClick={() => setDeletingId(null)}>
+            <Button
+              variant="muted"
+              className="flex-1"
+              disabled={deleteLoading}
+              onClick={() => setDeletingId(null)}
+            >
               Cancel
             </Button>
             <Button
               variant="primary"
               className="flex-1 bg-danger hover:bg-danger/90"
+              loading={deleteLoading}
               onClick={() => deletingId && handleDelete(deletingId)}
             >
               Delete

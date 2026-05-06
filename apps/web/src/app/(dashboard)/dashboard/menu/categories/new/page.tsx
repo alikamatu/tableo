@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { useAppSelector } from '@/stores/store';
 import { createCategorySchema } from '@/lib/validations';
 import { Input } from '@/components/ui/Input';
@@ -95,7 +96,7 @@ function NewCategoryPageInner() {
 
   if (!restaurant) {
     return (
-      <div className="text-muted-foreground py-20 text-center font-medium">
+      <div className="py-20 text-center font-medium text-muted-foreground">
         Select a restaurant first.
       </div>
     );
@@ -123,7 +124,7 @@ function NewCategoryPageInner() {
     >
       <div className="space-y-6">
         <div className="space-y-2">
-          <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Cover image
           </label>
           <ImageUpload
@@ -149,7 +150,7 @@ function NewCategoryPageInner() {
         />
 
         <div className="space-y-2">
-          <label className="text-muted-foreground text-xs font-black uppercase tracking-widest">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Parent
           </label>
           <Select
@@ -181,7 +182,7 @@ function NewCategoryPageInner() {
         <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
           <div>
             <p className="text-sm font-semibold text-foreground">Active</p>
-            <p className="text-muted-foreground text-xs">Hide from the public menu when off.</p>
+            <p className="text-xs text-muted-foreground">Hide from the public menu when off.</p>
           </div>
           <Switch
             checked={form.isActive}
@@ -197,7 +198,9 @@ export default function NewCategoryPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-muted-foreground py-20 text-center text-sm font-medium">Loading…</div>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-primary" size={28} strokeWidth={1.75} />
+        </div>
       }
     >
       <NewCategoryPageInner />
