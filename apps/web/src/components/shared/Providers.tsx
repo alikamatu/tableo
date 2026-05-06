@@ -1,10 +1,12 @@
 'use client';
 
+import { Suspense } from 'react';
 import { Provider } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from 'next-themes';
 import { store } from '@/stores/store';
-import { AuthInit } from './AuthInit';
+import { SessionBootstrapper } from '@/components/auth/SessionBootstrapper';
+import { InitAuth } from '@/components/auth/InitAuth';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -15,13 +17,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
        * enableSystem       → allows "system" as a valid theme value
        * disableTransitionOnChange → no flash when toggling
        */}
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <AuthInit />
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <Suspense fallback={null}>
+          <SessionBootstrapper />
+          <InitAuth />
+        </Suspense>
         {children}
         <Toaster
           position="top-right"

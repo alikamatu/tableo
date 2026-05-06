@@ -90,3 +90,17 @@
     background: hsl(var(--fg-muted) / 0.4);
   }
 }
+
+/* ─── Utility aliases ────────────────────────────────────────────────────────
+   In Tailwind, `text-muted` maps to `colors.muted.DEFAULT` which we use as a
+   surface color token (same as `bg-muted`). Many components use `text-muted`
+   intending "muted text", so we alias it explicitly to the muted-foreground
+   token to keep text readable.
+────────────────────────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .text-muted,
+  .text-fg-muted {
+    color: hsl(var(--fg-muted));
+  }
+}

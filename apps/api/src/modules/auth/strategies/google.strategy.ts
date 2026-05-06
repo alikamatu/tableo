@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ConfigService } from '@nestjs/config';
+import type { ConfigService } from '@nestjs/config';
 
 /**
  * Google OAuth strategy — optional.
  * Only registered if GOOGLE_CLIENT_ID is set in the environment.
  * Requires: npm install passport-google-oauth20 @types/passport-google-oauth20
  */
+
 let Strategy: new (...args: unknown[]) => object;
 
 try {
