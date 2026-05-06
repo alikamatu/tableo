@@ -4,11 +4,11 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../config/prisma.service';
+import type { PrismaService } from '../../config/prisma.service';
 import type { OnboardingStepDto } from './dto/onboarding-step.dto';
 
 const STEP_ORDER = ['welcome', 'restaurant_info', 'location_hours', 'payment', 'done'] as const;
-type StepName = typeof STEP_ORDER[number];
+type StepName = (typeof STEP_ORDER)[number];
 
 @Injectable()
 export class OnboardingService {
@@ -26,12 +26,23 @@ export class OnboardingService {
     const restaurant = await this.prisma.restaurant.findFirst({
       where: { ownerId: userId },
       select: {
-        id: true, name: true, slug: true, description: true,
-        logoUrl: true, coverUrl: true, cuisine: true,
-        phone: true, email: true, address: true, city: true,
-        country: true, openingHours: true, currency: true,
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        logoUrl: true,
+        coverUrl: true,
+        cuisine: true,
+        phone: true,
+        email: true,
+        address: true,
+        city: true,
+        country: true,
+        openingHours: true,
+        currency: true,
         paystackPublicKey: true,
-        onboardStep: true, onboardComplete: true,
+        onboardStep: true,
+        onboardComplete: true,
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -107,7 +118,11 @@ export class OnboardingService {
 
   /** Check slug availability */
   async checkSlug(slug: string, excludeOwnerId: string) {
-    const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const clean = slug
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
     const taken = await this.prisma.restaurant.findFirst({
       where: { slug: clean, NOT: { ownerId: excludeOwnerId } },
       select: { id: true },
@@ -121,23 +136,24 @@ export class OnboardingService {
       onboardComplete: isLastStep,
     };
 
-    if (dto.name)          d['name']          = dto.name;
-    if (dto.slug)          d['slug']          = dto.slug;
+    if (dto.name) d['name'] = dto.name;
+    if (dto.slug) d['slug'] = dto.slug;
     if (dto.description !== undefined) d['description'] = dto.description;
-    if (dto.logoUrl !== undefined)     d['logoUrl']     = dto.logoUrl;
-    if (dto.coverUrl !== undefined)    d['coverUrl']    = dto.coverUrl;
-    if (dto.cuisine)       d['cuisine']       = dto.cuisine;
-    if (dto.phone !== undefined)       d['phone']       = dto.phone;
-    if (dto.email !== undefined)       d['email']       = dto.email;
-    if (dto.address !== undefined)     d['address']     = dto.address;
-    if (dto.city !== undefined)        d['city']        = dto.city;
-    if (dto.country !== undefined)     d['country']     = dto.country;
+    if (dto.logoUrl !== undefined) d['logoUrl'] = dto.logoUrl;
+    if (dto.coverUrl !== undefined) d['coverUrl'] = dto.coverUrl;
+    if (dto.cuisine) d['cuisine'] = dto.cuisine;
+    if (dto.phone !== undefined) d['phone'] = dto.phone;
+    if (dto.email !== undefined) d['email'] = dto.email;
+    if (dto.address !== undefined) d['address'] = dto.address;
+    if (dto.city !== undefined) d['city'] = dto.city;
+    if (dto.country !== undefined) d['country'] = dto.country;
     if (dto.openingHours !== undefined) d['openingHours'] = dto.openingHours;
-    if (dto.paystackPublicKey !== undefined)  d['paystackPublicKey']  = dto.paystackPublicKey;
-    if (dto.paystackSecretKey !== undefined)  d['paystackSecretKey']  = dto.paystackSecretKey;
-    if (dto.settlementType !== undefined)     d['settlementType']     = dto.settlementType;
-    if (dto.settlementBank !== undefined)     d['settlementBank']     = dto.settlementBank;
-    if (dto.settlementAccountNumber !== undefined) d['settlementAccountNumber'] = dto.settlementAccountNumber;
+    if (dto.paystackPublicKey !== undefined) d['paystackPublicKey'] = dto.paystackPublicKey;
+    if (dto.paystackSecretKey !== undefined) d['paystackSecretKey'] = dto.paystackSecretKey;
+    if (dto.settlementType !== undefined) d['settlementType'] = dto.settlementType;
+    if (dto.settlementBank !== undefined) d['settlementBank'] = dto.settlementBank;
+    if (dto.settlementAccountNumber !== undefined)
+      d['settlementAccountNumber'] = dto.settlementAccountNumber;
 
     return d;
   }

@@ -4,7 +4,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '../../config/prisma.service';
+import type { PrismaService } from '../../config/prisma.service';
 import type { InviteStaffDto } from './dto/invite-staff.dto';
 import type { UpdateStaffDto } from './dto/update-staff.dto';
 
@@ -30,9 +30,7 @@ export class StaffService {
       where: { email: dto.email },
     });
     if (!user) {
-      throw new NotFoundException(
-        'User not found. They must create an account first.',
-      );
+      throw new NotFoundException('User not found. They must create an account first.');
     }
 
     // Check duplicate

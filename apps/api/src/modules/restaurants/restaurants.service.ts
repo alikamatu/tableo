@@ -1,7 +1,10 @@
 import {
-  Injectable, NotFoundException, ForbiddenException, BadRequestException,
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../config/prisma.service';
+import type { PrismaService } from '../../config/prisma.service';
 import type { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 
 // Fields never returned to the client (strip from all responses)
