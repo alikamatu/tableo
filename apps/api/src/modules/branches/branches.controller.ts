@@ -1,8 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { BranchesService } from './branches.service';
-import { CreateBranchDto } from './dto/create-branch.dto';
-import { UpdateBranchDto } from './dto/update-branch.dto';
+import type { BranchesService } from './branches.service';
+import type { CreateBranchDto } from './dto/create-branch.dto';
+import type { UpdateBranchDto } from './dto/update-branch.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { BranchAccessGuard } from '../../common/guards/branch-access.guard';
 import type { JwtPayload } from '@tableo/types';
@@ -50,10 +60,7 @@ export class BranchesController {
 
   @Get(':branchId/qrcode')
   @UseGuards(BranchAccessGuard)
-  async qrCode(
-    @Param('branchId') branchId: string,
-    @Query('baseUrl') baseUrl: string,
-  ) {
+  async qrCode(@Param('branchId') branchId: string, @Query('baseUrl') baseUrl: string) {
     const branch = await this.svc.findOne(branchId);
     const dataUrl = await this.svc.generateQrCode(branch.slug, baseUrl ?? 'https://tableo.app');
     return { qrCode: dataUrl, menuUrl: `${baseUrl ?? 'https://tableo.app'}/menu/${branch.slug}` };

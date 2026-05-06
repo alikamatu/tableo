@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { ManagerService } from './manager.service';
+import type { ManagerService } from './manager.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '@tableo/types';
 
