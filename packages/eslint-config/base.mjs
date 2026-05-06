@@ -12,7 +12,10 @@ export const baseConfig = tseslint.config(
     rules: {
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/consistent-type-imports": "warn",
+      // Disabled: the autofixer converts service/DTO imports to `import type`,
+      // which breaks NestJS DI (constructor tokens) and ValidationPipe metadata.
+      // Stylistic-only and not worth the runtime breakage.
+      "@typescript-eslint/consistent-type-imports": "off",
       "@typescript-eslint/no-empty-object-type": "warn",
       "no-empty": "warn",
     },

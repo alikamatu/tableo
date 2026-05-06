@@ -1,11 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import type { MenuService } from './menu.service';
-import type { CreateCategoryDto } from './dto/create-category.dto';
-import type { UpdateCategoryDto } from './dto/update-category.dto';
-import type { CreateMenuItemDto } from './dto/create-menu-item.dto';
-import type { UpdateMenuItemDto } from './dto/update-menu-item.dto';
-import type { UpsertOverrideDto } from './dto/upsert-override.dto';
+import { MenuService } from './menu.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { UpsertOverrideDto } from './dto/upsert-override.dto';
 import { BranchAccessGuard } from '../../common/guards/branch-access.guard';
 import { RestaurantAccessGuard } from '../../common/guards/restaurant-access.guard';
 

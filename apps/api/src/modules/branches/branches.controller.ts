@@ -10,12 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import type { BranchesService } from './branches.service';
-import type { CreateBranchDto } from './dto/create-branch.dto';
-import type { UpdateBranchDto } from './dto/update-branch.dto';
+import { BranchesService } from './branches.service';
+import { CreateBranchDto } from './dto/create-branch.dto';
+import { UpdateBranchDto } from './dto/update-branch.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { BranchAccessGuard } from '../../common/guards/branch-access.guard';
-import type { JwtPayload } from '@tableo/types';
+import { JwtPayload } from '@tableo/types';
 
 @ApiTags('Branches')
 @ApiBearerAuth()

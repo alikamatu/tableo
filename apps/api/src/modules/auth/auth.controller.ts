@@ -13,18 +13,18 @@ import {
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import type { Response as ExpressResponse } from 'express';
-import type { User } from '@prisma/client';
+import { Response as ExpressResponse } from 'express';
+import { User } from '@prisma/client';
 
 import { AuthService } from './auth.service';
-import type { RegisterDto } from './dto/register.dto';
-import type { ForgotPasswordDto } from './dto/forgot-password.dto';
-import type { ResetPasswordDto } from './dto/reset-password.dto';
-import type { ChangePasswordDto } from './dto/change-password.dto';
-import type { UpdateProfileDto } from './dto/update-profile.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { JwtPayload } from '@tableo/types';
+import { JwtPayload } from '@tableo/types';
 import { clearAuthCookies, setAuthCookies } from './auth-cookies';
 
 @ApiTags('Auth')

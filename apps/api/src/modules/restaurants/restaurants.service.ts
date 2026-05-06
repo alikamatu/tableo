@@ -4,8 +4,8 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import type { PrismaService } from '../../config/prisma.service';
-import type { UpdateRestaurantDto } from './dto/update-restaurant.dto';
+import { PrismaService } from '../../config/prisma.service';
+import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 
 // Fields never returned to the client (strip from all responses)
 const STRIP_FIELDS = ['paystackSecretKey'] as const;

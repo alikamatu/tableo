@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import type { StaffService } from './staff.service';
-import type { InviteStaffDto } from './dto/invite-staff.dto';
-import type { UpdateStaffDto } from './dto/update-staff.dto';
+import { StaffService } from './staff.service';
+import { InviteStaffDto } from './dto/invite-staff.dto';
+import { UpdateStaffDto } from './dto/update-staff.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { JwtPayload } from '@tableo/types';
+import { JwtPayload } from '@tableo/types';
 
 @ApiTags('Staff')
 @ApiBearerAuth()

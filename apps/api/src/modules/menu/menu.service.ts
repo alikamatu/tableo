@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
-import type { PrismaService } from '../../config/prisma.service';
-import type { CreateCategoryDto } from './dto/create-category.dto';
-import type { UpdateCategoryDto } from './dto/update-category.dto';
-import type { CreateMenuItemDto } from './dto/create-menu-item.dto';
-import type { UpdateMenuItemDto } from './dto/update-menu-item.dto';
-import type { UpsertOverrideDto } from './dto/upsert-override.dto';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../config/prisma.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { UpsertOverrideDto } from './dto/upsert-override.dto';
 
 @Injectable()
 export class MenuService {

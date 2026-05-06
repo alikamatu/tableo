@@ -4,8 +4,8 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import type { PrismaService } from '../../config/prisma.service';
-import type { OnboardingStepDto } from './dto/onboarding-step.dto';
+import { PrismaService } from '../../config/prisma.service';
+import { OnboardingStepDto } from './dto/onboarding-step.dto';
 
 const STEP_ORDER = ['welcome', 'restaurant_info', 'location_hours', 'payment', 'done'] as const;
 type StepName = (typeof STEP_ORDER)[number];

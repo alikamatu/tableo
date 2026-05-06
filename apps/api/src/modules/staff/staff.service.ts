@@ -4,9 +4,9 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import type { PrismaService } from '../../config/prisma.service';
-import type { InviteStaffDto } from './dto/invite-staff.dto';
-import type { UpdateStaffDto } from './dto/update-staff.dto';
+import { PrismaService } from '../../config/prisma.service';
+import { InviteStaffDto } from './dto/invite-staff.dto';
+import { UpdateStaffDto } from './dto/update-staff.dto';
 
 @Injectable()
 export class StaffService {

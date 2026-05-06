@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import type { OrdersService } from './orders.service';
-import type { CreateOrderDto } from './dto/create-order.dto';
-import type { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import type { UpdatePaymentDto } from './dto/update-payment.dto';
-import type { QueryOrdersDto } from './dto/query-orders.dto';
+import { OrdersService } from './orders.service';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { QueryOrdersDto } from './dto/query-orders.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { BranchAccessGuard } from '../../common/guards/branch-access.guard';
 

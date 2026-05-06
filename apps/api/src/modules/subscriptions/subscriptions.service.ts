@@ -6,9 +6,9 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
-import type { PrismaService } from '../../config/prisma.service';
-import type { InitSubscriptionDto } from './dto/init-subscription.dto';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../config/prisma.service';
+import { InitSubscriptionDto } from './dto/init-subscription.dto';
 
 const INVALID_PAYSTACK_PLAN_CODES = new Set([
   '',

@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import type { PrismaService } from '../../config/prisma.service';
+import { PrismaService } from '../../config/prisma.service';
 import { paginate, buildPaginationMeta } from '@tableo/utils';
-import type { CreateOrderDto } from './dto/create-order.dto';
-import type { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import type { UpdatePaymentDto } from './dto/update-payment.dto';
-import type { QueryOrdersDto } from './dto/query-orders.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { QueryOrdersDto } from './dto/query-orders.dto';
 
 @Injectable()
 export class OrdersService {

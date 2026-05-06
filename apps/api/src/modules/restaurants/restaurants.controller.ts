@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Patch } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import type { RestaurantsService } from './restaurants.service';
-import type { UpdateRestaurantDto } from './dto/update-restaurant.dto';
+import { RestaurantsService } from './restaurants.service';
+import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { JwtPayload } from '@tableo/types';
+import { JwtPayload } from '@tableo/types';
 
 @ApiTags('Restaurants')
 @ApiBearerAuth()

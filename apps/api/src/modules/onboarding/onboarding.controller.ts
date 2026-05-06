@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Inject, Patch, Query, Res } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import type { Response } from 'express';
+import { Response } from 'express';
 import { OnboardingService } from './onboarding.service';
-import type { OnboardingStepDto } from './dto/onboarding-step.dto';
+import { OnboardingStepDto } from './dto/onboarding-step.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { JwtPayload } from '@tableo/types';
+import { JwtPayload } from '@tableo/types';
 import { AuthService } from '../auth/auth.service';
 import { setAuthCookies } from '../auth/auth-cookies';
 
