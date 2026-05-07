@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import api from '@/lib/api';
-import { tokenStore } from '@/lib/tokens';
+import { tokenStore, setSessionCookies } from '@/lib/tokens';
 import { normalizeError, type NormalizedError } from '@/lib/api-error';
 import { markOnboardComplete } from '@/stores/authSlice';
 
@@ -156,7 +156,10 @@ export const saveOnboardingStep = createAsyncThunk(
         accessToken?: string;
       };
       if (d.accessToken) tokenStore.set(d.accessToken);
-      if (d.complete) dispatch(markOnboardComplete());
+      if (d.complete) {
+        dispatch(markOnboardComplete());
+        setSessionCookies(true, undefined);
+      }
       return d;
     } catch (err) {
       return rejectWithValue(normalizeError(err));
